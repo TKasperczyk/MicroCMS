@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+      "src/services/settings/netBundle/index.ts"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "declaration": true,
+        "removeComments": true,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "allowSyntheticDefaultImports": true,
+        "target": "esnext",
+        "sourceMap": true,
+        "strict": true,
+        "esModuleInterop": true,
+        "outDir": "./dist",
+        "baseUrl": "./",
+        "incremental": true,
+        "types": ["node"],
+        "typeRoots": ["node_modules/@types"]
+    }
+}
