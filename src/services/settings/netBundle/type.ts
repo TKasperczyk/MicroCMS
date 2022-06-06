@@ -2,8 +2,10 @@
 
 import { z } from "zod";
 import { ServiceType } from "../../../shared/types/enums/ServiceType";
+import { ObjectId } from "../../../shared/database/mongo";
 
 export interface NetBundleType {
+    _id?: ObjectId,
     name: string,
     upMbps: number,
     downMbps: number,
@@ -18,6 +20,7 @@ export interface NetBundleType {
 };
 
 export const NetBundleType: z.ZodType<NetBundleType> = z.lazy(() => z.object({
+    _id: z.instanceof(ObjectId).optional(),
     name: z.string(),
     upMbps: z.number(),
     downMbps: z.number(),

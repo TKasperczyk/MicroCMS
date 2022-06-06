@@ -1,4 +1,4 @@
-import { Db, ObjectId } from "mongodb";
+import { Db, ObjectId, Sort } from "mongodb";
 export declare class Mongo {
     constructor(database: string);
     private client;
@@ -8,4 +8,4 @@ export declare class Mongo {
     init(): Promise<boolean>;
     getConnection(): Promise<Db>;
 }
-export { ObjectId };
+export { ObjectId, Sort };

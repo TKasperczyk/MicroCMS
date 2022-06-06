@@ -1,6 +1,6 @@
 "use strict";
 
-import { MongoClient, Db, ObjectId } from "mongodb";
+import { MongoClient, Db, ObjectId, Sort } from "mongodb";
 
 export class Mongo {
     constructor(database: string) {
@@ -45,4 +45,4 @@ export class Mongo {
     }
 };
 
-export { ObjectId };
+export { ObjectId, Sort };

@@ -23,6 +23,17 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.fileSystem = void 0;
+exports.crudRouteToMethod = exports.fileSystem = void 0;
 exports.fileSystem = __importStar(require("./fileSystem"));
+const crudRouteToMethod = (crudName) => {
+    let result = crudName;
+    if (crudName === "search" || crudName === "aggregate" || crudName === "add") {
+        result = "post";
+    }
+    else if (crudName === "update") {
+        result = "put";
+    }
+    return result;
+};
+exports.crudRouteToMethod = crudRouteToMethod;
 //# sourceMappingURL=index.js.map
