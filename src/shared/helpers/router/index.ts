@@ -1,3 +1,3 @@
 "use strict";
 
-export * from "./getAllModules";
+export * from "./ApiCall";

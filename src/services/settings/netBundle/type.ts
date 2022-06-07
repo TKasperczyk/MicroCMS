@@ -1,7 +1,7 @@
 "use strict";
 
 import { z } from "zod";
-import { ServiceType } from "../../../shared/types/enums/ServiceType";
+import { ServiceType } from "../../../shared/types/enums";
 import { ObjectId } from "../../../shared/database/mongo";
 
 export interface NetBundleType {

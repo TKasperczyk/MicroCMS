@@ -5,30 +5,66 @@ import { Mongo, ObjectId, Sort } from "./Mongo";
 import { LooseObject, CrudRoutes } from "../../types/index";
 
 class Crud <ReturnType> implements CrudRoutes {
-    constructor(database: string, collection: string, validator: z.ZodType<ReturnType>) {
+    constructor(
+        database: string, collection: string,
+        validator: z.ZodType<ReturnType>, factory: (input: ReturnType) => ReturnType,
+        indexes: string[], uniqueIndexes: string[]
+    ) {
         this.mongo = new Mongo(database);
         this.collection = collection;
         this.validator = validator;
+        this.factory = factory;
+        this.indexes = indexes;
+        this.uniqueIndexes = uniqueIndexes;
     };
 
     private mongo: Mongo;
     private collection: string;
     private validator: z.ZodType<ReturnType>;
+    private factory: (input: ReturnType) => ReturnType;
+    private indexes: string[];
+    private uniqueIndexes: string[];
 
-    public async get(id: string): Promise<ReturnType | null> {
+    public async init(): Promise<void> {
+        const connection = await this.mongo.getConnection();
+        for (const index of this.indexes){
+            await connection.collection(this.collection).createIndex(index);
+        }
+        for (const uniqueIndex of this.uniqueIndexes){
+            await connection.collection(this.collection).createIndex(uniqueIndex, {unique: true});
+        }
+    };
+
+    public async get(id: string): Promise<ReturnType | ReturnType[] | null> {
         try {
             const connection = await this.mongo.getConnection();
-            const mongoId = new ObjectId(id);
-            const document = await connection.collection(this.collection).findOne(mongoId);
-            if (!document){
-                return null;
-            }
-            try {
-                const result: ReturnType = this.validator.parse(document);
-                return result;
-            } catch (error) {
-                const errorMessage = `Error while conforming a query result to the provided type: ${error}`;
-                throw new Error(errorMessage);
+            if (id){
+                const mongoId = new ObjectId(id);
+                const document = await connection.collection(this.collection).findOne(mongoId);
+                if (!document){
+                    return null;
+                }
+                try {
+                    const result: ReturnType = this.validator.parse(document);
+                    return result;
+                } catch (error) {
+                    const errorMessage = `Error while conforming a query result to the provided type: ${error}`;
+                    throw new Error(errorMessage);
+                }
+            } else {
+                const documents = await connection.collection(this.collection).find().toArray();
+                if (!documents){
+                    return null;
+                }
+                try {
+                    const result: ReturnType[] = documents.map((document) => {
+                        return this.validator.parse(document);
+                    });
+                    return result;
+                } catch (error) {
+                    const errorMessage = `Error while conforming a query result to the provided type: ${error}`;
+                    throw new Error(errorMessage);
+                }
             }
         } catch (error) {
             const errorMessage = `Error while executing a get query: ${error} - ${id.toString()}`;
@@ -97,11 +133,17 @@ class Crud <ReturnType> implements CrudRoutes {
     };
     public async add(documentToAdd: ReturnType): Promise<ReturnType> {
         try {
-            const connection = await this.mongo.getConnection();
-            const _id = await connection.collection(this.collection).insertOne(documentToAdd);
-
+            let documentFromFactory = documentToAdd;
             try {
-                const result: ReturnType = this.validator.parse({...documentToAdd, _id});
+                documentFromFactory = this.factory(documentToAdd);
+            } catch (error) {
+                const errorMessage = `Error while parsing the incoming object: ${error} - ${JSON.stringify(documentToAdd)}`;
+                throw new Error(errorMessage);
+            }
+            const connection = await this.mongo.getConnection();
+            const insertResult = await connection.collection(this.collection).insertOne(documentFromFactory);
+            try {
+                const result: ReturnType = this.validator.parse({...documentFromFactory, _id: insertResult.insertedId});
                 return result;
             } catch (error) {
                 const errorMessage = `Error while conforming a query result to the provided type: ${error} - ${JSON.stringify(documentToAdd)}`;
@@ -126,7 +168,7 @@ class Crud <ReturnType> implements CrudRoutes {
                 throw new Error(errorMessage);
             }
         } catch (error) {
-            const errorMessage = `Error while executing an add query: ${error} - ${JSON.stringify(documentToUpdate)}`;
+            const errorMessage = `Error while executing an update query: ${error} - ${JSON.stringify(documentToUpdate)}`;
             throw new Error(errorMessage);
         }
     };

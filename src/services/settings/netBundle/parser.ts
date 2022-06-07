@@ -1,11 +1,12 @@
 "use strict";
 
-import { ParsedReqArgs, } from "../../../shared/types";
+import { NextFunction, Request, Response } from "express";
+import { CmsRequest } from "../../../shared/types";
 
-export const parseRequest = (req: any): ParsedReqArgs  => {
-    return {
-        params: req.params,
-        query: req.query,
-        body: req.body
-    };
+export const parseRequest = (req: Request, res: Response, next: NextFunction): void  => {
+    const parsedReq = req as CmsRequest;
+    parsedReq.parsedBody = req.body;
+    parsedReq.parsedQuery = req.query;
+    parsedReq.parsedParams = req.params;
+    next();
 };
