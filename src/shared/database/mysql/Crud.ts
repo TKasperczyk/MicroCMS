@@ -4,7 +4,7 @@ import { z } from "zod";
 import { Mysql } from "./Mysql";
 
 class Crud <ReturnType> {
-    constructor(database: string, table: string, validator: z.ZodType<ReturnType>) {
+    constructor(database: string, table: string, validator: z.ZodTypeAny) {
         this.mysql = new Mysql(database);
         this.table = table;
         this.validator = validator;
@@ -12,7 +12,7 @@ class Crud <ReturnType> {
 
     private mysql: Mysql;
     private table: string;
-    private validator: z.ZodType<ReturnType>;
+    private validator: z.ZodTypeAny;
 
     public async get(id: number): Promise<ReturnType | null> {
         const query = `SELECT * FROM ${this.table} WHERE id = ?;`;
