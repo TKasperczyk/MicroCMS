@@ -3,36 +3,36 @@
 import { NextFunction, Request, Response } from "express";
 
 import { IncomingParser } from "@cmsHelpers/communication";
-import { CmsRequest } from "@cmsTypes/index";
+import { CmsRequest, CrudRoutes, LooseObject } from "@cmsTypes/index";
 
 import { sendError } from "./sendError";
 
 export class ReqParser extends IncomingParser {
     private extractCrudMethodNameFromReq(req: Request): string {
-        let crudMethodName: string = "";
+        let crudMethodName = "";
         switch (req.method.toLowerCase()) {
-            case "get": {
-                if (/search/.test(req.originalUrl)) {
-                    crudMethodName = "search";
-                } else if (/aggregate/.test(req.originalUrl)) {
-                    crudMethodName = "aggregate";
-                } else {
-                    crudMethodName = "get";
-                }
-                break;
+        case "get": {
+            if (/search/.test(req.originalUrl)) {
+                crudMethodName = "search";
+            } else if (/aggregate/.test(req.originalUrl)) {
+                crudMethodName = "aggregate";
+            } else {
+                crudMethodName = "get";
             }
-            case "post": {
-                crudMethodName = "add";
-                break;
-            }
-            case "put": {
-                crudMethodName = "update";
-                break;
-            }
-            case "delete": {
-                crudMethodName = "delete";
-                break;
-            }
+            break;
+        }
+        case "post": {
+            crudMethodName = "add";
+            break;
+        }
+        case "put": {
+            crudMethodName = "update";
+            break;
+        }
+        case "delete": {
+            crudMethodName = "delete";
+            break;
+        }
         }
         return crudMethodName;
     }
@@ -44,18 +44,18 @@ export class ReqParser extends IncomingParser {
         } catch (error) {
             sendError(res, String(error), 400);
         }
-    };
+    }
     public parseReq(req: CmsRequest): CmsRequest {
-        req.parsedQuery = this.parseQuery(req.query);
-        req.parsedBody = this.parseBody(req.body);
-        req.parsedParams = this.parseParams(req.params);
+        req.parsedQuery = this.parseQuery(req.query as string | LooseObject);
+        req.parsedBody = this.parseBody(req.body as string | LooseObject);
+        req.parsedParams = this.parseParams(req.params as string | LooseObject);
 
         if (this.crudRequiredArgsEnabled) {
             const crudMethodName = this.extractCrudMethodNameFromReq(req);
-            if (crudMethodName && !this.checkCrudRequiredArgs(req, crudMethodName)){
+            if (crudMethodName && !this.checkCrudRequiredArgs(req, crudMethodName as keyof CrudRoutes)) {
                 throw new Error(`Incomplete or incorrect arguments in the incoming request: ${this.lastError}`);
             }
         }
         return req;
-    };
-};
+    }
+}

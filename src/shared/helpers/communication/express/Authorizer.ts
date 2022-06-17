@@ -2,4 +2,4 @@
 
 export class Authorizer {
 
-};
+}

@@ -21,6 +21,6 @@ export const NetBundle = z.object({
 }).strict();
 export type NetBundle = z.infer<typeof NetBundle>;
 
-export const requiredDefaults: {[key: string]: any} = {
+export const requiredDefaults: { [key: string]: unknown } = {
     "name": ""
 };

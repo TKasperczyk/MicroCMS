@@ -1,6 +1,7 @@
 "use strict";
 
 import { Request } from "express";
+import { Sort } from "mongodb";
 export * as enums from "./enums";
 export * as errors from "./errors";
 
@@ -30,6 +31,14 @@ export interface CrudRoutes {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
+export interface CrudMongoSearchOptions {
+    query: LooseObject, 
+    sort: Sort, 
+    page: number,
+    pageSize: number, 
+    limit: number
+}
+
 export interface ParsedReqArgs {
     params: LooseObject,
     query: LooseObject,
@@ -43,7 +52,7 @@ export interface AuthorizeMapEntry {
 }
 
 export type ServiceFactory<ReturnType> = (input: ReturnType, includeRequired?: boolean) => ReturnType;
-export type ApiResultType<ReturnType> = ReturnType | ReturnType[];
+export type ApiResultType<ReturnType> = ReturnType | ReturnType[] | null | boolean;
 
 export interface AuthorizeMap {
     user: {

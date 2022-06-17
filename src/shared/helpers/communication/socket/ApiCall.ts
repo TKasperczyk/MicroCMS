@@ -2,17 +2,16 @@
 
 import { Socket } from "socket.io";
 
-import { CmsMessageResponse, LooseObject } from "@cmsTypes/index";
+import { CmsMessageResponse, LooseObject, ApiResultType } from "@cmsTypes/index";
 
 class ApiCall <ReturnType> {
-    constructor() {};
     public async performStandard(
         socket: Socket, id: string, user: LooseObject,
-        crudFunction: () => any, outputAuthorizer: (response: ReturnType | ReturnType[], user: LooseObject) => ReturnType | ReturnType[]
-    ): Promise<ReturnType | null> {
-        return new Promise((resolve, reject) => {
+        crudFunction: () => Promise<ApiResultType<ReturnType>>, outputAuthorizer: (response: ApiResultType<ReturnType>, user: LooseObject) => ApiResultType<ReturnType>
+    ): Promise<ApiResultType<ReturnType> | null> {
+        return new Promise((resolve) => {
             crudFunction()
-                .then((result: ReturnType) => {
+                .then((result: ApiResultType<ReturnType>) => {
                     socket.emit("response", {
                         status: true,
                         data: outputAuthorizer(result, user),
@@ -33,7 +32,7 @@ class ApiCall <ReturnType> {
                     resolve(null);
                 });
         });
-    };
-};
+    }
+}
 
 export { ApiCall };

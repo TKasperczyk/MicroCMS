@@ -14,7 +14,7 @@ import { NetBundle } from "./type";
     TODO: the aggregation operation will allow users to rename fields in the output object and thus bypass the output authorizer
 */
 
-(dotObj.keepArray as boolean) = true;
+(dotObj.keepArray as boolean) = true; //eslint-disable-line
 
 const netBundleAuthorizeMap: AuthorizeMap = {
     user: {
@@ -34,7 +34,7 @@ const netBundleAuthorizeMap: AuthorizeMap = {
 };
 
 export class Authorizer<InputType> {
-    constructor(authorizeMap: AuthorizeMap, typeName: string, factory: ServiceFactory<InputType>, defaultOpen: boolean = true) {
+    constructor(authorizeMap: AuthorizeMap, typeName: string, factory: ServiceFactory<InputType>, defaultOpen = true) {
         this.authorizeMap = authorizeMap;
         this.typeName = typeName;
         this.defaultOpen = defaultOpen;
@@ -47,38 +47,38 @@ export class Authorizer<InputType> {
     private factory: ServiceFactory<InputType>;
 
     public authorizeOutput(response: ApiResultType<InputType>, user: LooseObject): ApiResultType<InputType> {
-        if (!user?.login || !user?.group){
+        if (!user?.login || !user?.group) {
             throw new Error("Malformed or missing user object");
         }
-        if (!Array.isArray(response) && typeof response !== "object"){
+        if (!Array.isArray(response) && typeof response !== "object") {
             return response;
         }
-        let result = response;
-        result = this.hideFields(result, this.authorizeMap.group[user.group]?.hiddenReadFields || []);
-        result = this.hideFields(result, this.authorizeMap.user[user.login]?.hiddenReadFields || []);
+        let result: ApiResultType<InputType> = response;
+        result = this.hideFields(result, this.authorizeMap.group[user.group as string]?.hiddenReadFields || []);
+        result = this.hideFields(result, this.authorizeMap.user[user.login as string]?.hiddenReadFields || []);
         return result;
     }
 
     public middleware(packet: Event, next: SocketNextFunction): void {
         const { msg, eventName } = extractPacketData(packet);
-        if (!msg?.user?.login || !msg?.user?.group){
+        if (!msg?.user?.login || !msg?.user?.group) {
             return next(new SocketError("Malformed or missing user object in the incoming message", msg.id));
         }
 
         if (
-            !this.authorizeOperation(eventName, this.authorizeMap.group[msg.user.group]?.forbiddenOperations || []) ||
-            !this.authorizeOperation(eventName, this.authorizeMap.user[msg.user.login]?.forbiddenOperations || [])
+            !this.authorizeOperation(eventName, this.authorizeMap.group[msg.user.group as string]?.forbiddenOperations || []) ||
+            !this.authorizeOperation(eventName, this.authorizeMap.user[msg.user.login as string]?.forbiddenOperations || [])
         ) {
-            return next(new SocketError(`A user tried to perform a forbidden operation ${msg.user.login}: ${eventName}`, msg.id));
+            return next(new SocketError(`A user tried to perform a forbidden operation ${msg.user.login as string}: ${eventName}`, msg.id));
         }
 
         const inputObj = msg?.parsedBody[this.typeName] as InputType;
-        if (typeof inputObj === "object"){
+        if (typeof inputObj === "object") {
             if (
-                !this.checkInputObj(inputObj, this.authorizeMap.group[msg.user.group]?.forbiddenWriteFields || []) ||
-                !this.checkInputObj(inputObj, this.authorizeMap.user[msg.user.login]?.forbiddenWriteFields || [])
+                !this.checkInputObj(inputObj, this.authorizeMap.group[msg.user.group as string]?.forbiddenWriteFields || []) ||
+                !this.checkInputObj(inputObj, this.authorizeMap.user[msg.user.login as string]?.forbiddenWriteFields || [])
             ) {
-                return next(new SocketError(`A user tried to write to forbidden fields ${msg.user.login}`, msg.id));
+                return next(new SocketError(`A user tried to write to forbidden fields ${msg.user.login as string}`, msg.id));
             }
         }
         next();
@@ -87,7 +87,7 @@ export class Authorizer<InputType> {
         return !forbiddenOperations.includes(operation);
     }
     private checkInputObj(input: InputType, forbiddenWriteFields: string[]): boolean {
-        const dottedInput = dotObj.dot(input);
+        const dottedInput = dotObj.dot(input) as LooseObject;
         return !(
             Object.keys(dottedInput).some((key) => forbiddenWriteFields.includes(key)) ||
             Object.keys(dottedInput).some((key) => forbiddenWriteFields.includes(key))
@@ -95,21 +95,23 @@ export class Authorizer<InputType> {
     }
     private hideFields(output: ApiResultType<InputType>, hiddenReadFields: string[]): ApiResultType<InputType> {
         const doHide = (outputObj: InputType): InputType => {
-            const dottedOutputObj = dotObj.dot(outputObj);
-            for (const key of Object.keys(dottedOutputObj)){
-                if (hiddenReadFields.includes(key)){
-                    delete dottedOutputObj[key as keyof InputType];
+            const dottedOutputObj = dotObj.dot(outputObj) as LooseObject;
+            for (const key of Object.keys(dottedOutputObj)) {
+                if (hiddenReadFields.includes(key)) {
+                    delete dottedOutputObj[key];
                 }
             }
             const result: LooseObject = dotObj.object(dottedOutputObj);
             return result as InputType;
         };
-        if (Array.isArray(output)){
+        if (Array.isArray(output)) {
             return output.map(doHide);
+        } else if (output === null || typeof output === "boolean") {
+            return output;
         } else {
             return doHide(output);
         }
     }
-};
+}
 
 export const netBundleAuthorizer = new Authorizer<NetBundle>(netBundleAuthorizeMap, "netBundle", createNetBundle, true);

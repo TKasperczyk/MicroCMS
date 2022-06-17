@@ -2,16 +2,15 @@
 
 import { Response } from "express";
 
-import { CmsRequestResponse } from "@cmsTypes/index";
+import { ApiResultType, CmsRequestResponse } from "@cmsTypes/index";
 
 import { sendError } from "./sendError";
 
 class ApiCall <ReturnType> {
-    constructor() {};
-    public async performStandard(res: Response, crudFunction: () => any): Promise<ReturnType | null> {
-        return new Promise((resolve, reject) => {
+    public async performStandard(res: Response, crudFunction: () => Promise<ApiResultType<ReturnType>>): Promise<ApiResultType<ReturnType>> {
+        return new Promise((resolve) => {
             crudFunction()
-                .then((result: ReturnType) => {
+                .then((result:  ApiResultType<ReturnType>) => {
                     res.status(200).jsonp({
                         status: true,
                         data: result,
@@ -24,7 +23,7 @@ class ApiCall <ReturnType> {
                     resolve(null);
                 });
         });
-    };
-};
+    }
+}
 
 export { ApiCall };
