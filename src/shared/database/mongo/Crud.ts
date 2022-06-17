@@ -1,9 +1,11 @@
 "use strict";
 
-import { z } from "zod";
 import * as dotObj from "dot-object";
+import { z } from "zod";
+
+import { CrudRoutes, LooseObject, ServiceFactory } from "@cmsTypes/index";
+
 import { Mongo, ObjectId, Sort } from "./Mongo";
-import { LooseObject, CrudRoutes, ServiceFactory } from "../../types/index";
 
 class Crud<ReturnType> implements CrudRoutes {
     constructor(
@@ -39,7 +41,7 @@ class Crud<ReturnType> implements CrudRoutes {
     };
     public async search({ query, sort = {}, page = 0, pageSize = 10, limit = 0 }: { query: LooseObject, sort?: Sort, page?: number, pageSize?: number, limit?: number }): Promise<ReturnType[]> {
         try {
-            if (page > 0 && limit > 0) {
+            if (page > 0 && limit > 0){
                 throw new Error("Paging and limiting are mutually exclusive in the Mongo search function");
             }
 

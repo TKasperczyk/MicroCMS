@@ -1,8 +1,9 @@
 "use strict";
 
 import { z } from "zod";
-import { ServiceType } from "../../../../shared/types/enums";
-import { ObjectId } from "../../../../shared/database/mongo";
+
+import { ObjectId } from "@cmsDatabase/mongo";
+import { ServiceType } from "@cmsTypes/enums";
 
 export const NetBundle = z.object({
     _id: z.instanceof(ObjectId).optional(),

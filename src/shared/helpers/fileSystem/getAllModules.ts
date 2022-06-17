@@ -2,7 +2,8 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { LooseObject } from "../../types";
+
+import { LooseObject } from "@cmsTypes/index";
 
 export const getAllModules = async (directory: string, { excludeList = [], fileMode = false }: { excludeList?: string[], fileMode?: boolean }): Promise<object> => {
     const importedModules: LooseObject = {};

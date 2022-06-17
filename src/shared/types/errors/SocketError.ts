@@ -6,4 +6,4 @@ export class SocketError extends Error {
         this.id = id;
     }
     public id: string;
-};
+}

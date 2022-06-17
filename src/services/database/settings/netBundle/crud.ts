@@ -1,8 +1,9 @@
 "use strict";
 
-import { NetBundle } from "./type";
+import { Crud } from "@cmsDatabase/mongo";
+
 import { createNetBundle } from "./factory";
-import { Crud } from "../../../../shared/database/mongo";
+import { NetBundle } from "./type";
 
 
 export class NetBundleCrud extends Crud<NetBundle> { };

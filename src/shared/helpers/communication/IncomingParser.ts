@@ -1,9 +1,9 @@
 "use strict";
 
-import { LooseObject } from "../../types";
-import { CrudRoutes } from "../../types";
-import { optionalParse } from "../optionalParse";
 import { ObjectId } from "mongodb";
+
+import { optionalParse } from "@cmsHelpers/index";
+import { CrudRoutes, LooseObject } from "@cmsTypes/index";
 
 export class IncomingParser {
     constructor(typeName: string, crudRequiredArgsEnabled: boolean = false) {
@@ -55,7 +55,7 @@ export class IncomingParser {
         const currentArgs = Object.keys(obj);
         return requiredArgList.every((requiredArgName) => {
             const argPresent = currentArgs.includes(requiredArgName);
-            if(argPresent && requiredArgName === "id") {
+            if (argPresent && requiredArgName === "id") {
                 try {
                     new ObjectId(obj!.id);
                     return true;
@@ -77,4 +77,19 @@ export class IncomingParser {
             return result;
         });
     };
+    public checkUserPresence(obj: LooseObject): boolean {
+        const userPresent = obj?.user;
+        const loginPresent = obj?.user?.login;
+        const groupPresent = obj?.user?.group;
+        if (!userPresent){
+            this.lastError = `missing user object in ${JSON.stringify(obj)}`;
+        }
+        if (!loginPresent){
+            this.lastError = `missing login in the user object in ${JSON.stringify(obj)}`;
+        }
+        if (!groupPresent){
+            this.lastError = `missing group in the user object in ${JSON.stringify(obj)}`;
+        }
+        return userPresent && loginPresent && groupPresent;
+    }
 };

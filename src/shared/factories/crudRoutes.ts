@@ -1,6 +1,6 @@
 "use strict";
 
-import { CrudRoutes } from "../types";
+import { CrudRoutes } from "@cmsTypes/index";
 
 export const crudRoutesFactory = (): CrudRoutes => {
     return {

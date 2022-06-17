@@ -4,7 +4,7 @@
   "description": "Microserviced Company Management System",
   "main": "dist/index.js",
   "scripts": {
-    "prebuild": "tslint -c tslint.json -p tsconfig.json --fix",
+    "prebuild": "eslint --ignore-path .gitignore",
     "build": "tsc",
     "buildClean": "rm -rf ./dist/* && tsc",
     "buildTarget": "rm -rf ./dist/* && tsc --project tsconfig-target.json",
@@ -28,6 +28,9 @@
   },
   "devDependencies": {
     "@types/node": "^17.0.38",
+    "@typescript-eslint/eslint-plugin": "^5.28.0",
+    "@typescript-eslint/parser": "^5.28.0",
+    "eslint": "^8.17.0",
     "tslint": "^6.1.3",
     "typescript": "^4.7.2"
   }

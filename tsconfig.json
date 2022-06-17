@@ -11,9 +11,14 @@
         "strict": true,
         "esModuleInterop": true,
         "outDir": "./dist",
-        "baseUrl": "./",
         "incremental": true,
         "types": ["node"],
-        "typeRoots": ["node_modules/@types", "shared/types", "declarations.d.ts"]
+        "typeRoots": ["node_modules/@types", "declarations.d.ts"],
+        "baseUrl": "./",
+        "paths": {
+            "@cmsTypes/*": ["src/shared/types/*"],
+            "@cmsHelpers/*": ["src/shared/helpers/*"],
+            "@cmsDatabase/*": ["src/shared/database/*"]
+        }
     }
 }

@@ -1,0 +1,23 @@
+{
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+        "project": ["tsconfig.json"]
+    },
+    "plugins": ["@typescript-eslint"],
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:@typescript-eslint/recommended-requiring-type-checking",
+    ],
+    "rules": {
+        "indent": ["error", 4],
+        "brace-style": "off",
+        "@typescript-eslint/brace-style": ["error", "1tbs", { "allowSingleLine": true }],
+        "space-before-blocks": "off",
+        "@typescript-eslint/space-before-blocks": ["error"],
+        "space-before-function-paren": "off",
+        "@typescript-eslint/space-before-function-paren": ["error", "never"],
+        "quotes": "off",
+        "@typescript-eslint/quotes": ["error", "double"]
+    }
+  }

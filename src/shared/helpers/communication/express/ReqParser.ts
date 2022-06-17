@@ -1,16 +1,18 @@
 "use strict";
 
-import { CmsRequest } from "../../../types";
-import { Request, Response, NextFunction } from "express";
+import { NextFunction, Request, Response } from "express";
+
+import { IncomingParser } from "@cmsHelpers/communication";
+import { CmsRequest } from "@cmsTypes/index";
+
 import { sendError } from "./sendError";
-import { IncomingParser } from "../IncomingParser";
 
 export class ReqParser extends IncomingParser {
     private extractCrudMethodNameFromReq(req: Request): string {
         let crudMethodName: string = "";
-        switch(req.method.toLowerCase()) {
+        switch (req.method.toLowerCase()) {
             case "get": {
-                if(/search/.test(req.originalUrl)) {
+                if (/search/.test(req.originalUrl)) {
                     crudMethodName = "search";
                 } else if (/aggregate/.test(req.originalUrl)) {
                     crudMethodName = "aggregate";

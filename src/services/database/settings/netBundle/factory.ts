@@ -1,8 +1,10 @@
 "use strict";
 
 import * as dotObj from "dot-object";
+
+import { ServiceFactory } from "@cmsTypes/index";
+
 import { NetBundle, requiredDefaults } from "./type";
-import { ServiceFactory } from "../../../../shared/types";
 
 export const createNetBundle: ServiceFactory<NetBundle> = (netBundle: NetBundle, includeRequired = false): NetBundle => {
     if (includeRequired){

@@ -1,17 +1,43 @@
 "use strict";
 
-import { Event, Socket } from "socket.io";
 import * as dotObj from "dot-object";
-import { AuthorizeMap, AuthorizeMapEntry, CmsMessage, LooseObject, ServiceFactory } from "../../../../shared/types";
-import { extractPacketData, savePacketData } from "../../../../shared/helpers/communication/socket";
-import { SocketError } from "../../../../shared/types/errors";
+import { Event } from "socket.io";
 
+import { extractPacketData } from "@cmsHelpers/communication/socket";
+import { SocketError } from "@cmsTypes/errors";
+import { ApiResultType, AuthorizeMap, LooseObject, ServiceFactory, SocketNextFunction } from "@cmsTypes/index";
+
+import { createNetBundle } from "./factory";
+import { NetBundle } from "./type";
+
+/*
+    TODO: the aggregation operation will allow users to rename fields in the output object and thus bypass the output authorizer
+*/
+
+(dotObj.keepArray as boolean) = true;
+
+const netBundleAuthorizeMap: AuthorizeMap = {
+    user: {
+        "test": {
+            hiddenReadFields: [],
+            forbiddenWriteFields: [],
+            forbiddenOperations: []
+        }
+    },
+    group: {
+        "testGroup": {
+            hiddenReadFields: ["name"],
+            forbiddenWriteFields: ["name"],
+            forbiddenOperations: []
+        }
+    }
+};
 
 export class Authorizer<InputType> {
     constructor(authorizeMap: AuthorizeMap, typeName: string, factory: ServiceFactory<InputType>, defaultOpen: boolean = true) {
         this.authorizeMap = authorizeMap;
         this.typeName = typeName;
-        this.defaultOpen = true;
+        this.defaultOpen = defaultOpen;
         this.factory = factory;
     }
 
@@ -20,58 +46,70 @@ export class Authorizer<InputType> {
     private defaultOpen: boolean;
     private factory: ServiceFactory<InputType>;
 
-    public middleware(packet: Event, next: (err?: Error | undefined) => void): void {
-        const { msg, eventName } = extractPacketData(packet);
-        if (!msg?.user?.login){
-            return next(new SocketError("Error: the incoming message doesn't include the user object", msg.id));
+    public authorizeOutput(response: ApiResultType<InputType>, user: LooseObject): ApiResultType<InputType> {
+        if (!user?.login || !user?.group){
+            throw new Error("Malformed or missing user object");
         }
-        const dottedMsgObj = dotObj.dot(msg[this.typeName as keyof CmsMessage]);
-        for (const login of Object.keys(this.authorizeMap.user)){
-            const possibleError = this.authorizeObject(msg, dottedMsgObj, eventName, this.authorizeMap.user[login]);
-            if (possibleError instanceof SocketError){
-                return next(possibleError);
-            }
-            packet = savePacketData({msg: {
-                ...msg, 
-                [this.typeName]: this.hideFields(dottedMsgObj, this.authorizeMap.user[login].hiddenReadFields, eventName);
-            }, eventName}, packet);
+        if (!Array.isArray(response) && typeof response !== "object"){
+            return response;
+        }
+        let result = response;
+        result = this.hideFields(result, this.authorizeMap.group[user.group]?.hiddenReadFields || []);
+        result = this.hideFields(result, this.authorizeMap.user[user.login]?.hiddenReadFields || []);
+        return result;
+    }
 
+    public middleware(packet: Event, next: SocketNextFunction): void {
+        const { msg, eventName } = extractPacketData(packet);
+        if (!msg?.user?.login || !msg?.user?.group){
+            return next(new SocketError("Malformed or missing user object in the incoming message", msg.id));
         }
-        for (const groupName of Object.keys(this.authorizeMap.group)){
-            const result = this.authorizeObject(msg, eventName, this.authorizeMap.group[groupName], packet);
-            if (result instanceof SocketError){
-                next(result);
-            } else {
-                packet = result;
+
+        if (
+            !this.authorizeOperation(eventName, this.authorizeMap.group[msg.user.group]?.forbiddenOperations || []) ||
+            !this.authorizeOperation(eventName, this.authorizeMap.user[msg.user.login]?.forbiddenOperations || [])
+        ) {
+            return next(new SocketError(`A user tried to perform a forbidden operation ${msg.user.login}: ${eventName}`, msg.id));
+        }
+
+        const inputObj = msg?.parsedBody[this.typeName] as InputType;
+        if (typeof inputObj === "object"){
+            if (
+                !this.checkInputObj(inputObj, this.authorizeMap.group[msg.user.group]?.forbiddenWriteFields || []) ||
+                !this.checkInputObj(inputObj, this.authorizeMap.user[msg.user.login]?.forbiddenWriteFields || [])
+            ) {
+                return next(new SocketError(`A user tried to write to forbidden fields ${msg.user.login}`, msg.id));
             }
         }
         next();
     }
-
-    private authorizeObject(msg: CmsMessage, dottedMsgObj: LooseObject, eventName: string, mapEntry: AuthorizeMapEntry): SocketError | void{
-        if (mapEntry.forbiddenOperations.includes(eventName)){
-            return new SocketError(`Error: forbidden operation ${eventName} for user ${msg?.user?.login} in type ${this.typeName}`, msg.id);
-        }
-        if (!msg[this.typeName as keyof CmsMessage]){
-            return;
-        }
-        for (let key of Object.keys(dottedMsgObj)){
-            if (eventName === "update"){
-                if (mapEntry.forbiddenWriteFields.includes(key)){
-                    return new SocketError(`Error: The user ${msg?.user?.login} tried to update a forbidden field: ${key} in ${this.typeName}`, msg.id);
-                }
-            }
-        }
+    private authorizeOperation(operation: string, forbiddenOperations: string[]): boolean {
+        return !forbiddenOperations.includes(operation);
     }
-    private hideFields(dottedMsgObj: LooseObject, hiddenReadFields: string[], eventName: string): LooseObject {
-        for (let key of Object.keys(dottedMsgObj)){
-            if (eventName == "update"){
+    private checkInputObj(input: InputType, forbiddenWriteFields: string[]): boolean {
+        const dottedInput = dotObj.dot(input);
+        return !(
+            Object.keys(dottedInput).some((key) => forbiddenWriteFields.includes(key)) ||
+            Object.keys(dottedInput).some((key) => forbiddenWriteFields.includes(key))
+        );
+    }
+    private hideFields(output: ApiResultType<InputType>, hiddenReadFields: string[]): ApiResultType<InputType> {
+        const doHide = (outputObj: InputType): InputType => {
+            const dottedOutputObj = dotObj.dot(outputObj);
+            for (const key of Object.keys(dottedOutputObj)){
                 if (hiddenReadFields.includes(key)){
-                    delete dottedMsgObj[key];
+                    delete dottedOutputObj[key as keyof InputType];
                 }
             }
+            const result: LooseObject = dotObj.object(dottedOutputObj);
+            return result as InputType;
+        };
+        if (Array.isArray(output)){
+            return output.map(doHide);
+        } else {
+            return doHide(output);
         }
-        return dotObj.object(dottedMsgObj);
-        //return savePacketData({msg: {...msg, [this.typeName]: dotObj.object(dottedMsgObj)}, eventName}, packet);
     }
 };
+
+export const netBundleAuthorizer = new Authorizer<NetBundle>(netBundleAuthorizeMap, "netBundle", createNetBundle, true);

@@ -14,7 +14,29 @@
             "severity": "warning",
             "options": ["debug", "info", "log", "time", "timeEnd", "trace"]
         },
-        //Dev
+        "indent": [true, "spaces", 4],
+        "whitespace": [true, "check-module", "check-branch"],
+        "ordered-imports": [
+            true,
+            {
+                "module-source-path": "full",
+                "grouped-imports": true,
+                "groups": [{
+                    "name": "internal modules",
+                    "match": "^@cms",
+                    "order": 2
+                }, {
+                    "name": "relative dir",
+                    "match": "^[.].*",
+                    "order": 3
+                }, {
+                    "name": "node_modules",
+                    "match": ".*",
+                    "order": 1
+                }]
+            }
+        ],
+
         "no-empty": false,
         "no-unused-expression": false
     },

@@ -1,7 +1,8 @@
 "use strict";
 
 import { Event } from "socket.io";
-import { PacketData, CmsMessage } from "../../../types";
+
+import { CmsMessage, PacketData } from "@cmsTypes/index";
 
 export const extractPacketData = (packet: Event): PacketData => {
     return {

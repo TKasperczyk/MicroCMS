@@ -1,6 +1,7 @@
 "use strict";
 
 import { z } from "zod";
+
 import { Mysql } from "./Mysql";
 
 class Crud <ReturnType> {

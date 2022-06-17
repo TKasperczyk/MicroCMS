@@ -1,8 +1,10 @@
 "use strict";
 
 import { Response } from "express";
+
+import { CmsRequestResponse } from "@cmsTypes/index";
+
 import { sendError } from "./sendError";
-import { CmsRequestResponse } from "../../../types";
 
 class ApiCall <ReturnType> {
     constructor() {};

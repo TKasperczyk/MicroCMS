@@ -1,7 +1,8 @@
 "use strict";
 
 import { Response } from "express";
-import { CmsRequestResponse } from "../../../types";
+
+import { CmsRequestResponse } from "@cmsTypes/index";
 
 export const sendError = (res: Response, message: string, returnCode: number = 500) => {
     res.status(returnCode).jsonp({

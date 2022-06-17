@@ -1,6 +1,6 @@
 "use strict";
 
-import { CrudRoutes } from "../../../../shared/types";
+import { CrudRoutes } from "@cmsTypes/index";
 
 export const getRoutes = (routePrefix: string): CrudRoutes => {
     return {

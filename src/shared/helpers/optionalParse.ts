@@ -1,6 +1,6 @@
 "use strict";
 
-import { LooseObject } from "../types";
+import { LooseObject } from "@cmsTypes/index";
 
 export const optionalParse = (input: LooseObject | string): LooseObject => {
     const result: LooseObject = {};
@@ -23,7 +23,7 @@ export const optionalParse = (input: LooseObject | string): LooseObject => {
                 return input;
             }
         }
-    } catch(error) {
+    } catch (error) {
         const errorMessage = `Error while parsing an object: ${error}`;
         throw new Error(errorMessage);
     }
