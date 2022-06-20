@@ -73,8 +73,6 @@
         "object-curly-spacing": "off",
         "@typescript-eslint/object-curly-spacing": ["error", "always"],
         "no-useless-constructor": "off",
-        "@typescript-eslint/no-useless-constructor": ["error"],
-        "no-unsafe-return": "off",
-        "@typescript-eslint/no-unsafe-member-access": "error"
+        "@typescript-eslint/no-useless-constructor": ["error"]
     }
 }

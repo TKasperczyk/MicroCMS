@@ -16,7 +16,7 @@
         "typeRoots": ["node_modules/@types", "declarations.d.ts"],
         "baseUrl": "./",
         "paths": {
-            "@framework/*": ["src/framework/*"],
+            "@framework/*": ["src/framework/*"]
         },
         "alwaysStrict": true
     }
