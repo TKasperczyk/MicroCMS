@@ -18,5 +18,6 @@
         "paths": {
             "@framework/*": ["src/framework/*"],
         },
+        "alwaysStrict": true
     }
 }

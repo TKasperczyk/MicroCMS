@@ -1,9 +1,7 @@
-"use strict";
-
-
 import { NextFunction, Request, Response } from "express";
 
 import { IncomingParser } from "@framework/helpers/communication/IncomingParser";
+
 import { CmsRequest } from "@framework/types/communication/express";
 import { CrudOperations } from "@framework/types/database";
 import { LooseObject } from "@framework/types/generic";

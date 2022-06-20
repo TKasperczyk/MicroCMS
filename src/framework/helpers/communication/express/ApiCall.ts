@@ -1,6 +1,3 @@
-"use strict";
-
-
 import { Response } from "express";
 
 import { ApiResult } from "@framework/types/communication";

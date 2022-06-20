@@ -1,9 +1,7 @@
-"use strict";
-
-
 import { Event } from "socket.io";
 
 import { IncomingParser } from "@framework/helpers/communication/IncomingParser";
+
 import { CmsMessage, SocketNextFunction } from "@framework/types/communication/socket";
 import { CrudOperations } from "@framework/types/database";
 import { SocketError } from "@framework/types/errors";

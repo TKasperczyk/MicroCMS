@@ -1,9 +1,7 @@
-"use strict";
-
-
 import { z } from "zod";
 
 import { ObjectId } from "@framework/database/mongo";
+
 import { ServiceType } from "@framework/types/enums";
 
 export const NetBundle = z.object({

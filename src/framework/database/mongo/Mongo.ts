@@ -1,5 +1,3 @@
-"use strict";
-
 import { Db, MongoClient, ObjectId, Sort } from "mongodb";
 
 export class Mongo {

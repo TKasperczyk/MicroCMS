@@ -1,11 +1,9 @@
-"use strict";
-
 import { createServer } from "http";
-
 
 import { Server } from "socket.io";
 
 import { addPacketId } from "@framework/helpers/communication/socket/middleware";
+
 import { CmsMessage, CmsMessageResponse } from "@framework/types/communication/socket";
 import { CrudSearchOptions } from "@framework/types/database/mongo";
 import { SocketError } from "@framework/types/errors";
@@ -34,7 +32,6 @@ const io = new Server(httpServer, {
         socket.use(addPacketId);
         socket.use(netBundleMessageParser.middleware.bind(netBundleMessageParser));
         socket.use(netBundleAuthorizer.middleware.bind(netBundleAuthorizer));
-
 
         socket.on("search", (msg: CmsMessage) => netBundleApiCall.performStandard(socket, msg.id, msg.user, 
             netBundleCrud.search.bind(netBundleCrud, { ...msg?.parsedQuery as CrudSearchOptions }), outputAuthorizer)

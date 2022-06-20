@@ -2,6 +2,7 @@ import * as dotObj from "dot-object";
 import { Event } from "socket.io";
 
 import { extractPacketData } from "@framework/helpers/communication/socket/packetData";
+
 import { ApiResult } from "@framework/types/communication/ApiResult";
 import { AuthorizeMap } from "@framework/types/communication/AuthorizeMap";
 import { SocketNextFunction } from "@framework/types/communication/socket/SocketNextFunction";

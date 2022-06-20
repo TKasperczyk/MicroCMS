@@ -20,19 +20,19 @@
     },
     "rules": {
         "indent": ["error", 4],
-        "no-multiple-empty-lines": "error",
+        "no-multiple-empty-lines": ["error", { 
+            "max": 1, 
+            "maxEOF": 0 
+        }],
         "import/order": ["error", {
             "newlines-between": "always",
-            "groups": ["builtin", "external", "internal"],
+            "groups": ["builtin", "external", "index", "internal", "object", "type", "sibling", "parent"],
             "pathGroups": [{
-                "group": "builtin",
-                "pattern": "^@framework"
+                "group": "type",
+                "pattern": "@framework/types/**"
             }, {
                 "group": "internal",
-                "pattern": "^[.].*"
-            }, {
-                "group": "external",
-                "pattern": ".*"
+                "pattern": "@framework/helpers/**"
             }],
             "alphabetize": {
                 "order": "asc",
@@ -74,6 +74,7 @@
         "@typescript-eslint/object-curly-spacing": ["error", "always"],
         "no-useless-constructor": "off",
         "@typescript-eslint/no-useless-constructor": ["error"],
-        "no-unsafe-return": "off"
+        "no-unsafe-return": "off",
+        "@typescript-eslint/no-unsafe-member-access": "error"
     }
 }

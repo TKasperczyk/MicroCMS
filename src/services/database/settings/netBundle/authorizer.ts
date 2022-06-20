@@ -1,6 +1,5 @@
-"use strict";
-
 import { Authorizer } from "@framework/helpers/communication";
+
 import { AuthorizeMap } from "@framework/types/communication";
 
 import { NetBundle } from "./type";

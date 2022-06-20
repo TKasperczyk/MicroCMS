@@ -1,9 +1,6 @@
-"use strict";
-
 import { createConnection, Connection } from "mysql2/promise";
 
 import { LooseObject } from "@framework/types/generic";
-
 
 export class Mysql {
     constructor(database: string) {

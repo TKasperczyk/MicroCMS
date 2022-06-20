@@ -1,5 +1,3 @@
-"use strict";
-
 import { LooseObject } from "@framework/types/generic";
 
 export const optionalParse = (input: LooseObject | string): LooseObject => {

@@ -1,5 +1,3 @@
-"use strict";
-
 import * as dotObj from "dot-object";
 import { z } from "zod";
 

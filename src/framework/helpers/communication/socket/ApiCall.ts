@@ -1,11 +1,8 @@
-"use strict";
-
 import { Socket } from "socket.io";
 
 import { ApiResult } from "@framework/types/communication";
 import { CmsMessageResponse } from "@framework/types/communication/socket";
 import { LooseObject } from "@framework/types/generic";
-
 
 class ApiCall <ReturnType> {
     public async performStandard(

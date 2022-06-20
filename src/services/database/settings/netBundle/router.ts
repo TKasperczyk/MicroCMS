@@ -1,5 +1,3 @@
-"use strict";
-
 import { CrudOperations } from "@framework/types/database";
 
 export const getRoutes = (routePrefix: string): CrudOperations => {

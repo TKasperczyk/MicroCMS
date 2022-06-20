@@ -1,5 +1,3 @@
-"use strict";
-
 export class SocketError extends Error {
     constructor(message: string, id: string) {
         super(message);

@@ -1,10 +1,7 @@
-"use strict";
-
 import * as dotObj from "dot-object";
 
 import { LooseObject } from "@framework/types/generic";
 import { Factory } from "@framework/types/service";
-
 
 import { NetBundle, requiredDefaults } from "./type";
 

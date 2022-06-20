@@ -1,9 +1,7 @@
-"use strict";
-
-
 import { ObjectId } from "mongodb";
 
 import { optionalParse } from "@framework/helpers/optionalParse";
+
 import { CrudOperations } from "@framework/types/database";
 import { LooseObject } from "@framework/types/generic";
 
