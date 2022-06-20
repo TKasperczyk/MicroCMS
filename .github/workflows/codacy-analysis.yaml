@@ -20,3 +20,4 @@ jobs:
         uses: codacy/codacy-analysis-cli-action@master
         with:
           upload: true
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
