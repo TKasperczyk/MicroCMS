@@ -2,14 +2,17 @@
 
 import { createServer } from "http";
 
+
 import { Server } from "socket.io";
 
-import { ApiCall } from "@cmsHelpers/communication/socket";
-import { addPacketId } from "@cmsHelpers/communication/socket/middleware";
-import { SocketError } from "@cmsTypes/errors";
-import { CmsMessage, CmsMessageResponse, CrudMongoSearchOptions, LooseObject } from "@cmsTypes/index";
+import { addPacketId } from "@framework/helpers/communication/socket/middleware";
+import { CmsMessage, CmsMessageResponse } from "@framework/types/communication/socket";
+import { CrudSearchOptions } from "@framework/types/database/mongo";
+import { SocketError } from "@framework/types/errors";
+import { LooseObject } from "@framework/types/generic";
 
-import { netBundleAuthorizer } from "./authorizer";
+import { netBundleApiCall } from "./apiCall";
+import { getNetBundleAuthorizer } from "./authorizer";
 import { netBundleCrud } from "./crud";
 import { netBundleMessageParser } from "./parser";
 import { NetBundle } from "./type";
@@ -17,9 +20,6 @@ import { NetBundle } from "./type";
 //import { getRoutes } from "./router";
 
 //const routes = getRoutes("/api/settings");
-const apiCall = new ApiCall<NetBundle>();
-const outputAuthorizer = netBundleAuthorizer.authorizeOutput.bind(netBundleAuthorizer);
-
 const httpServer = createServer();
 const io = new Server(httpServer, {
     transports: ["websocket"]
@@ -27,6 +27,8 @@ const io = new Server(httpServer, {
 
 (async () => {
     await netBundleCrud.init();
+    const netBundleAuthorizer = await getNetBundleAuthorizer();
+    const outputAuthorizer = netBundleAuthorizer.authorizeOutput.bind(netBundleAuthorizer);
 
     io.on("connection", (socket) => {
         socket.use(addPacketId);
@@ -34,22 +36,22 @@ const io = new Server(httpServer, {
         socket.use(netBundleAuthorizer.middleware.bind(netBundleAuthorizer));
 
 
-        socket.on("search", (msg: CmsMessage) => apiCall.performStandard(socket, msg.id, msg.user, 
-            netBundleCrud.search.bind(netBundleCrud, { ...msg?.parsedQuery as CrudMongoSearchOptions }), outputAuthorizer)
+        socket.on("search", (msg: CmsMessage) => netBundleApiCall.performStandard(socket, msg.id, msg.user, 
+            netBundleCrud.search.bind(netBundleCrud, { ...msg?.parsedQuery as CrudSearchOptions }), outputAuthorizer)
         );
-        socket.on("aggregate", (msg: CmsMessage) => apiCall.performStandard(socket, msg.id, msg.user, 
+        socket.on("aggregate", (msg: CmsMessage) => netBundleApiCall.performStandard(socket, msg.id, msg.user, 
             netBundleCrud.aggregate.bind(netBundleCrud, msg?.parsedQuery?.pipeline as LooseObject[]), outputAuthorizer)
         );
-        socket.on("get", (msg: CmsMessage) => apiCall.performStandard(socket, msg.id, msg.user, 
+        socket.on("get", (msg: CmsMessage) => netBundleApiCall.performStandard(socket, msg.id, msg.user, 
             netBundleCrud.get.bind(netBundleCrud, msg?.parsedParams?.id as string), outputAuthorizer)
         );
-        socket.on("add", (msg: CmsMessage) => apiCall.performStandard(socket, msg.id, msg.user, 
+        socket.on("add", (msg: CmsMessage) => netBundleApiCall.performStandard(socket, msg.id, msg.user, 
             netBundleCrud.add.bind(netBundleCrud, msg?.parsedBody?.netBundle as NetBundle), outputAuthorizer)
         );
-        socket.on("update", (msg: CmsMessage) => apiCall.performStandard(socket, msg.id, msg.user, 
+        socket.on("update", (msg: CmsMessage) => netBundleApiCall.performStandard(socket, msg.id, msg.user, 
             netBundleCrud.update.bind(netBundleCrud, msg?.parsedParams?.id as string, msg?.parsedBody?.netBundle as NetBundle), outputAuthorizer)
         );
-        socket.on("delete", (msg: CmsMessage) => apiCall.performStandard(socket, msg.id, msg.user, 
+        socket.on("delete", (msg: CmsMessage) => netBundleApiCall.performStandard(socket, msg.id, msg.user, 
             netBundleCrud.delete.bind(netBundleCrud, msg?.parsedParams?.id as string), outputAuthorizer)
         );
 
@@ -66,6 +68,7 @@ const io = new Server(httpServer, {
     });
 
     httpServer.listen(4000, "127.0.0.1");
-})().catch(() => {
-    //TODO
+})().then().catch((error) => {
+    console.error(`Error while initializing the netBundle service ${String(error)}`);
+    process.exit();
 });

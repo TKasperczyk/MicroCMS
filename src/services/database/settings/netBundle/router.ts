@@ -1,8 +1,8 @@
 "use strict";
 
-import { CrudRoutes } from "@cmsTypes/index";
+import { CrudOperations } from "@framework/types/database";
 
-export const getRoutes = (routePrefix: string): CrudRoutes => {
+export const getRoutes = (routePrefix: string): CrudOperations => {
     return {
         search: `${routePrefix}/netBundle/search`,
         aggregate: `${routePrefix}/netBundle/aggregate`,
@@ -10,5 +10,5 @@ export const getRoutes = (routePrefix: string): CrudRoutes => {
         add: `${routePrefix}/netBundle`,
         update: `${routePrefix}/netBundle/:id`,
         delete: `${routePrefix}/netBundle/:id`,
-    } as CrudRoutes;
+    } as CrudOperations;
 };

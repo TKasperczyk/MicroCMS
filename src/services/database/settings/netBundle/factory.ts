@@ -2,11 +2,13 @@
 
 import * as dotObj from "dot-object";
 
-import { LooseObject, ServiceFactory } from "@cmsTypes/index";
+import { LooseObject } from "@framework/types/generic";
+import { Factory } from "@framework/types/service";
+
 
 import { NetBundle, requiredDefaults } from "./type";
 
-export const createNetBundle: ServiceFactory<NetBundle> = (netBundle: NetBundle, includeRequired = false): NetBundle => {
+export const createNetBundle: Factory<NetBundle> = (netBundle: NetBundle, includeRequired = false): NetBundle => {
     if (includeRequired) {
         const dottedNetBundle = dotObj.dot(netBundle) as LooseObject;
         for (const key of Object.keys(requiredDefaults)) {

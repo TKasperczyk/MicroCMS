@@ -1,0 +1,1 @@
+export type SocketNextFunction = (err?: Error | undefined) => void;

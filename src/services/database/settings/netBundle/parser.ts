@@ -1,6 +1,6 @@
 "use strict";
 
-import { MessageParser } from "@cmsHelpers/communication/socket";
+import { MessageParser } from "@framework/helpers/communication/socket";
 
 export class NetBundleMessageParser extends MessageParser { }
 export const netBundleMessageParser = new MessageParser("netBundle", true);

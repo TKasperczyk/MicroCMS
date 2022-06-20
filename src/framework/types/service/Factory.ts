@@ -1,0 +1,1 @@
+export type Factory<ReturnType> = (input: ReturnType, includeRequired?: boolean) => ReturnType;

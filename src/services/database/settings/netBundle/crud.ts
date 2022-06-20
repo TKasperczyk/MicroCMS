@@ -1,6 +1,6 @@
 "use strict";
 
-import { Crud } from "@cmsDatabase/mongo";
+import { Crud } from "@framework/database/mongo";
 
 import { createNetBundle } from "./factory";
 import { NetBundle } from "./type";
