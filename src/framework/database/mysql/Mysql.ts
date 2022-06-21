@@ -2,6 +2,8 @@ import { createConnection, Connection } from "mysql2/promise";
 
 import { LooseObject } from "@framework/types/generic";
 
+//Test
+
 export class Mysql {
     constructor(database: string) {
         this.database = database;
