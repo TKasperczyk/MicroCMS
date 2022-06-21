@@ -1,5 +1,8 @@
 import { createConnection, Connection } from "mysql2/promise";
 
+//eslint-disable-next-line
+import { StringObject } from "@framework/types/generic";
+//eslint-disable-next-line
 import { LooseObject } from "@framework/types/generic";
 
 export class Mysql {

@@ -3,6 +3,8 @@ import { z } from "zod";
 import { ObjectId } from "@framework/database/mongo";
 
 import { ServiceType } from "@framework/types/enums";
+//eslint-disable-next-line
+import { StringObject } from "@framework/types/generic";
 
 export const NetBundle = z.object({
     _id: z.instanceof(ObjectId).optional(),

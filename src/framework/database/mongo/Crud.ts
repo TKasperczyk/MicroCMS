@@ -5,8 +5,6 @@ import { ApiResult } from "@framework/types/communication";
 import { CrudOperations } from "@framework/types/database";
 import { LooseObject } from "@framework/types/generic";
 import { Factory } from "@framework/types/service";
-//eslint-disable-next-line
-import { StringObject } from "@framework/types/generic";
 
 import { Mongo, ObjectId, Sort } from "./Mongo";
 
