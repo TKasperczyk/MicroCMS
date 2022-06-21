@@ -1,12 +1,12 @@
-import { CrudOperations } from "@framework/types/database";
+import { RouteMapping } from "@framework/types/communication/socket";
 
-export const getRoutes = (routePrefix: string): CrudOperations => {
-    return {
-        search: `${routePrefix}/netBundle/search`,
-        aggregate: `${routePrefix}/netBundle/aggregate`,
-        get: `${routePrefix}/netBundle/:id?`,
-        add: `${routePrefix}/netBundle`,
-        update: `${routePrefix}/netBundle/:id`,
-        delete: `${routePrefix}/netBundle/:id`,
-    } as CrudOperations;
+export const getRoutes = (routePrefix: string): RouteMapping[] => {
+    return [
+        { method: "get", eventName: "search", route: `${routePrefix}/netBundle/search` },
+        { method: "get", eventName: "aggregate", route: `${routePrefix}/netBundle/aggregate` },
+        { method: "get", eventName: "get", route: `${routePrefix}/netBundle/:id?` },
+        { method: "post", eventName: "add", route: `${routePrefix}/netBundle` },
+        { method: "put", eventName: "update", route: `${routePrefix}/netBundle/:id` },
+        { method: "delete", eventName: "delete", route: `${routePrefix}/netBundle/:id` },
+    ];
 };

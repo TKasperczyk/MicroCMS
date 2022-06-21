@@ -12,28 +12,28 @@ export class ReqParser extends IncomingParser {
     private extractCrudMethodNameFromReq(req: Request): string {
         let crudMethodName = "";
         switch (req.method.toLowerCase()) {
-        case "get": {
-            if (/search/.test(req.originalUrl)) {
-                crudMethodName = "search";
-            } else if (/aggregate/.test(req.originalUrl)) {
-                crudMethodName = "aggregate";
-            } else {
-                crudMethodName = "get";
+            case "get": {
+                if (/search/.test(req.originalUrl)) {
+                    crudMethodName = "search";
+                } else if (/aggregate/.test(req.originalUrl)) {
+                    crudMethodName = "aggregate";
+                } else {
+                    crudMethodName = "get";
+                }
+                break;
             }
-            break;
-        }
-        case "post": {
-            crudMethodName = "add";
-            break;
-        }
-        case "put": {
-            crudMethodName = "update";
-            break;
-        }
-        case "delete": {
-            crudMethodName = "delete";
-            break;
-        }
+            case "post": {
+                crudMethodName = "add";
+                break;
+            }
+            case "put": {
+                crudMethodName = "update";
+                break;
+            }
+            case "delete": {
+                crudMethodName = "delete";
+                break;
+            }
         }
         return crudMethodName;
     }

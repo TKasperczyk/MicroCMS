@@ -9,15 +9,13 @@ import { CrudSearchOptions } from "@framework/types/database/mongo";
 import { SocketError } from "@framework/types/errors";
 import { LooseObject } from "@framework/types/generic";
 
+import { netBundleAnnounce } from "./announce";
 import { netBundleApiCall } from "./apiCall";
 import { getNetBundleAuthorizer } from "./authorizer";
 import { netBundleCrud } from "./crud";
 import { netBundleMessageParser } from "./parser";
 import { NetBundle } from "./type";
 
-//import { getRoutes } from "./router";
-
-//const routes = getRoutes("/api/settings");
 const httpServer = createServer();
 const io = new Server(httpServer, {
     transports: ["websocket"]
@@ -29,6 +27,8 @@ const io = new Server(httpServer, {
     const outputAuthorizer = netBundleAuthorizer.authorizeOutput.bind(netBundleAuthorizer);
 
     io.on("connection", (socket) => {
+        console.log("connected!!!!", socket.id);
+
         socket.use(addPacketId);
         socket.use(netBundleMessageParser.middleware.bind(netBundleMessageParser));
         socket.use(netBundleAuthorizer.middleware.bind(netBundleAuthorizer));
@@ -65,6 +65,9 @@ const io = new Server(httpServer, {
     });
 
     httpServer.listen(4000, "127.0.0.1");
+    console.log("calling");
+    await netBundleAnnounce(4000);
+
 })().then().catch((error) => {
     console.error(`Error while initializing the netBundle service ${String(error)}`);
     process.exit();
