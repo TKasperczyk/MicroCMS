@@ -8,8 +8,6 @@ import { AuthorizeMap } from "@framework/types/communication/AuthorizeMap";
 import { SocketNextFunction } from "@framework/types/communication/socket/SocketNextFunction";
 import { SocketError } from "@framework/types/errors";
 import { LooseObject } from "@framework/types/generic";
-//eslint-disable-next-line
-import { StringObject } from "@framework/types/generic";
 
 /*
     TODO: the aggregation operation will allow users to rename fields in the output object and thus bypass the output authorizer

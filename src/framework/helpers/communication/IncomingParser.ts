@@ -4,8 +4,6 @@ import { optionalParse } from "@framework/helpers/optionalParse";
 
 import { CrudOperations } from "@framework/types/database";
 import { LooseObject } from "@framework/types/generic";
-//eslint-disable-next-line
-import { StringObject } from "@framework/types/generic";
 
 export class IncomingParser {
     constructor(typeName: string, crudRequiredArgsEnabled = false) {

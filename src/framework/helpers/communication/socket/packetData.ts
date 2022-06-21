@@ -10,7 +10,9 @@ export const extractPacketData = (packet: Event): PacketData => {
 };
 
 export const savePacketData = (packetData: PacketData, packet: Event): Event => {
-    packet[0] = packetData.eventName;
-    packet[1] = packetData.msg;
+    if (packet.length > 1) {
+        packet[0] = packetData.eventName;
+        packet[1] = packetData.msg;
+    }
     return packet;
 };

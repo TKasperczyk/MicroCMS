@@ -1,8 +1,5 @@
 import { Db, MongoClient, ObjectId, Sort } from "mongodb";
 
-//eslint-disable-next-line
-import { StringObject } from "@framework/types/generic";
-
 export class Mongo {
     constructor(database: string) {
         this.database = database;

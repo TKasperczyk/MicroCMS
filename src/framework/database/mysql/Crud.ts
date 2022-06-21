@@ -2,6 +2,8 @@ import { z } from "zod";
 
 import { Mysql } from "./Mysql";
 
+//TODO: this class isn't finished
+
 class Crud {
     constructor(database: string, table: string, validator: z.ZodTypeAny) {
         this.mysql = new Mysql(database);

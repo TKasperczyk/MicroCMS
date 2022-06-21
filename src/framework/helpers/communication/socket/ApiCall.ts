@@ -5,6 +5,7 @@ import { CmsMessageResponse } from "@framework/types/communication/socket";
 import { LooseObject } from "@framework/types/generic";
 
 class ApiCall <ReturnType> {
+    //Resolves to null when it catches an error
     public async performStandard(
         socket: Socket, id: string, user: LooseObject,
         crudFunction: () => Promise<ApiResult<ReturnType>>, outputAuthorizer: (response: ApiResult<ReturnType>, user: LooseObject) => ApiResult<ReturnType>

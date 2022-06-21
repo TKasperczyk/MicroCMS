@@ -47,6 +47,7 @@ class Crud<ReturnType> implements CrudOperations {
             }
 
             const connection = await this.mongo.getConnection();
+            //The cursor will be overwritten by the search options
             let cursor = connection.collection(this.collection).find(query);
 
             const shouldSort = Object.keys(sort).length > 0;

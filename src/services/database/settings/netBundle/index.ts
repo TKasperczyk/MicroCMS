@@ -8,8 +8,6 @@ import { CmsMessage, CmsMessageResponse } from "@framework/types/communication/s
 import { CrudSearchOptions } from "@framework/types/database/mongo";
 import { SocketError } from "@framework/types/errors";
 import { LooseObject } from "@framework/types/generic";
-//eslint-disable-next-line
-import { StringObject } from "@framework/types/generic";
 
 import { netBundleApiCall } from "./apiCall";
 import { getNetBundleAuthorizer } from "./authorizer";
