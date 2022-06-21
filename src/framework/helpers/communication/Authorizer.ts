@@ -13,8 +13,6 @@ import { LooseObject } from "@framework/types/generic";
     TODO: the aggregation operation will allow users to rename fields in the output object and thus bypass the output authorizer
 */
 
-//Test
-
 (dotObj.keepArray as boolean) = true; //eslint-disable-line
 
 export class Authorizer<InputType> {

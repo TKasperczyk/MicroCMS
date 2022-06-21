@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-//Test
-
 import { ObjectId } from "@framework/database/mongo";
 
 import { ServiceType } from "@framework/types/enums";

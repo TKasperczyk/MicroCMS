@@ -1,7 +1,5 @@
 import { Db, MongoClient, ObjectId, Sort } from "mongodb";
 
-//Test
-
 export class Mongo {
     constructor(database: string) {
         this.database = database;

@@ -2,8 +2,6 @@ import { createServer } from "http";
 
 import { Server } from "socket.io";
 
-//Test
-
 import { addPacketId } from "@framework/helpers/communication/socket/middleware";
 
 import { CmsMessage, CmsMessageResponse } from "@framework/types/communication/socket";
