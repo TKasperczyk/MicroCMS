@@ -9,6 +9,16 @@ import { Factory } from "@framework/types/service";
 import { Mongo, ObjectId, Sort } from "./Mongo";
 
 class Crud<ReturnType> implements CrudOperations {
+    /**
+     * 
+     * @param database - the name of the database
+     * @param collection - the name of the collection
+     * @param validator - the ZOD type that allows to parse objects
+     * @param factory - the function that produces a new ReturnType with default values
+     * @param indexes - a list of fields that should be indexed
+     * @param uniqueIndexes - a list of fields that should be unique
+     * @param autoIncrementField - a list of fields that should be auto-incremented
+     */
     constructor(
         database: string, collection: string,
         validator: z.ZodTypeAny, factory: Factory<ReturnType>,
@@ -31,6 +41,9 @@ class Crud<ReturnType> implements CrudOperations {
     private uniqueIndexes: string[];
     private autoIncrementField: null | string;
 
+    /**
+     * Must be called before using any other methods. Creates the connection and indexes
+     */
     public async init(): Promise<void> {
         const connection = await this.mongo.getConnection();
         for (const index of this.indexes) {
@@ -40,9 +53,21 @@ class Crud<ReturnType> implements CrudOperations {
             await connection.collection(this.collection).createIndex(uniqueIndex, { unique: true });
         }
     }
+    
+    /**
+     * Searches the database and returns an array of results. Parses each document and throws an error if any of them isn't compliant with the provided type
+     * @param {object} arg
+     * @param arg.query - the query object that will be passed to mongo
+     * @param arg.sort = {} - the sort object compliant with the Sort type - [key as string]: number
+     * @param arg.page = 0 - if greater than zero, you must also specify the pageSize parameter. Skips the provided number of results
+     * @param arg.pageSize = 0 - determines how big each page should be. page = 0 and pageSize >=0 is a valid combination
+     * @param arg.limit = 0 - limits the number of results to the provided value. Cannot be used with paging
+     * @returns an array of parsed documents
+     * @throws when both pageSize and limit are greater than 0, when at least one of the retrieved documents can't be parsed by the validator, when there's a mongo execution error
+     */
     public async search({ query, sort = {}, page = 0, pageSize = 10, limit = 0 }: { query: LooseObject, sort?: Sort, page?: number, pageSize?: number, limit?: number }): Promise<ReturnType[]> {
         try {
-            if (page > 0 && limit > 0) {
+            if (pageSize > 0 && limit > 0) {
                 throw new Error("Paging and limiting are mutually exclusive in the Mongo search function");
             }
 
@@ -54,7 +79,7 @@ class Crud<ReturnType> implements CrudOperations {
             if (shouldSort) {
                 cursor = cursor.sort(sort);
             }
-            if (page > 0) {
+            if (pageSize > 0) {
                 const skip = pageSize * Math.max((page - 1), 0);
                 cursor = cursor.skip(skip).limit(pageSize);
             } else if (limit > 0) {
