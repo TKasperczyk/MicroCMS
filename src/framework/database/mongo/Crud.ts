@@ -117,7 +117,7 @@ export abstract class Crud<ReturnType> implements CrudOperations {
      * @returns a single document, an array of documents or null if there are no documents with the provided id
      * @throws when the id is malformed, when at least one of the retrieved documents can't be parsed by the validator, when there's a mongo execution error
      */
-    public async get(id: string = ""): Promise<ApiResult<ReturnType> | null> {
+    public async get(id = ""): Promise<ApiResult<ReturnType> | null> {
         try {
             if (id) {
                 const result = await this.getSingleDocument(id);

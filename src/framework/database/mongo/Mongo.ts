@@ -1,4 +1,4 @@
-import { Db, MongoClient, ObjectId, Sort } from "mongodb";
+import { Db, MongoClient } from "mongodb";
 
 export class Mongo {
     constructor(database: string) {

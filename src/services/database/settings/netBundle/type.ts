@@ -1,6 +1,5 @@
+import { ObjectId } from "mongodb";
 import { z } from "zod";
-
-import { ObjectId } from "@framework/database/mongo";
 
 import { ServiceType } from "@framework/types/enums";
 
