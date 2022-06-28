@@ -4,6 +4,6 @@ import { RouteMapping } from "@framework/types/communication/socket/RouteMapping
 
 export const DiscoveryPack = z.object({
     routeMappings: z.array(RouteMapping),
-    port: z.number()
+    serviceId: z.string()
 }).strict();
 export type DiscoveryPack = z.infer<typeof DiscoveryPack>;

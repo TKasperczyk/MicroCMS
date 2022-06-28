@@ -8,7 +8,7 @@ import { Factory } from "@framework/types/service";
 
 import { Mongo, ObjectId, Sort } from "./Mongo";
 
-class Crud<ReturnType> implements CrudOperations {
+export abstract class Crud<ReturnType> implements CrudOperations {
     /**
      * 
      * @param database - the name of the database
@@ -65,7 +65,7 @@ class Crud<ReturnType> implements CrudOperations {
      * @returns an array of parsed documents
      * @throws when both pageSize and limit are greater than 0, when at least one of the retrieved documents can't be parsed by the validator, when there's a mongo execution error
      */
-    public async search({ query, sort = {}, page = 0, pageSize = 10, limit = 0 }: { query: LooseObject, sort?: Sort, page?: number, pageSize?: number, limit?: number }): Promise<ReturnType[]> {
+    public async search({ query, sort = {}, page = 0, pageSize = 0, limit = 0 }: { query: LooseObject, sort?: Sort, page?: number, pageSize?: number, limit?: number }): Promise<ReturnType[]> {
         try {
             if (pageSize > 0 && limit > 0) {
                 throw new Error("Paging and limiting are mutually exclusive in the Mongo search function");
@@ -94,8 +94,7 @@ class Crud<ReturnType> implements CrudOperations {
                 });
                 return result;
             } catch (error) {
-                const errorMessage = `Error while conforming a query result to the provided type: ${String(error)} - ${JSON.stringify(query)}`;
-                throw new Error(errorMessage);
+                throw new Error(`Error while conforming a query result to the provided type: ${String(error)} - ${JSON.stringify(query)}`);
             }
         } catch (error) {
             const errorMessage = `Error while executing a search query: ${String(error)} - ${JSON.stringify(query)}`;
@@ -115,8 +114,7 @@ class Crud<ReturnType> implements CrudOperations {
                 });
                 return result;
             } catch (error) {
-                const errorMessage = `Error while conforming a query result to the provided type: ${String(error)} - ${JSON.stringify(pipeline)}`;
-                throw new Error(errorMessage);
+                throw new Error(`Error while conforming a query result to the provided type: ${String(error)} - ${JSON.stringify(pipeline)}`);
             }
         } catch (error) {
             const errorMessage = `Error while executing an aggregate query: ${String(error)} - ${JSON.stringify(pipeline)}`;
@@ -136,8 +134,7 @@ class Crud<ReturnType> implements CrudOperations {
                     const result: ReturnType = this.validator.parse(document) as ReturnType;
                     return result;
                 } catch (error) {
-                    const errorMessage = `Error while conforming a query result to the provided type: ${String(error)}`;
-                    throw new Error(errorMessage);
+                    throw new Error(`Error while conforming a query result to the provided type: ${String(error)}`);
                 }
             } else {
                 const documents = await connection.collection(this.collection).find().toArray();
@@ -150,8 +147,7 @@ class Crud<ReturnType> implements CrudOperations {
                     });
                     return result;
                 } catch (error) {
-                    const errorMessage = `Error while conforming a query result to the provided type: ${String(error)}`;
-                    throw new Error(errorMessage);
+                    throw new Error(`Error while conforming a query result to the provided type: ${String(error)}`);
                 }
             }
         } catch (error) {
@@ -172,8 +168,7 @@ class Crud<ReturnType> implements CrudOperations {
             if (this.autoIncrementField) {
                 const autoIncrementKey = this.autoIncrementField as keyof ReturnType;
                 if (typeof documentFromFactory[autoIncrementKey] !== "number") {
-                    const errorMessage = `The factory didn't produce an object with a proper autoincrement field: ${this.autoIncrementField}: ${JSON.stringify(documentFromFactory)}`;
-                    throw new Error(errorMessage);
+                    throw new Error(`The factory didn't produce an object with a proper autoincrement field: ${this.autoIncrementField}: ${JSON.stringify(documentFromFactory)}`);
                 }
 
                 const latestIndex: LooseObject[] = await connection.collection(this.collection).find().project({ [this.autoIncrementField]: 1 }).sort({ [this.autoIncrementField]: -1 }).limit(1).toArray();
@@ -188,12 +183,10 @@ class Crud<ReturnType> implements CrudOperations {
                 const result: ReturnType = this.validator.parse({ ...documentFromFactory, _id: insertResult.insertedId }) as ReturnType;
                 return result;
             } catch (error) {
-                const errorMessage = `Error while conforming a query result to the provided type: ${String(error)} - ${JSON.stringify(documentToAdd)}`;
-                throw new Error(errorMessage);
+                throw new Error(`Error while conforming a query result to the provided type: ${String(error)} - ${JSON.stringify(documentToAdd)}`);
             }
         } catch (error) {
-            const errorMessage = `Error while executing an add query: ${String(error)} - ${JSON.stringify(documentToAdd)}`;
-            throw new Error(errorMessage);
+            throw new Error(`Error while executing an add query: ${String(error)} - ${JSON.stringify(documentToAdd)}`);
         }
     }
     public async update(id: string, documentToUpdate: ReturnType): Promise<ReturnType | null> {
@@ -214,31 +207,31 @@ class Crud<ReturnType> implements CrudOperations {
             }
             const { value } = await connection.collection(this.collection).findOneAndUpdate({ _id: mongoId }, { $set: dotObj.object(dDocumentToUpdate) }, { upsert: false, returnDocument: "after" });
             if (value === null) {
-                return null;
+                throw new Error(`Error while updating an object: the provided id doesn't exist ${id}`);
             }
             try {
                 const result: ReturnType = this.validator.parse(value) as ReturnType;
                 return result;
             } catch (error) {
-                const errorMessage = `Error while conforming a query result to the provided type: ${String(error)} - ${JSON.stringify(value)}`;
-                throw new Error(errorMessage);
+                throw new Error(`Error while conforming a query result to the provided type: ${String(error)} - ${JSON.stringify(value)}`);
             }
         } catch (error) {
-            const errorMessage = `Error while executing an update query: ${String(error)} - ${JSON.stringify(documentToUpdate)}`;
-            throw new Error(errorMessage);
+            throw new Error(`Error while executing an update query: ${String(error)} - ${JSON.stringify(documentToUpdate)}`);
         }
     }
-    public async delete(id: string): Promise<boolean> {
+    public async delete(id: string): Promise<null> {
         try {
             const connection = await this.mongo.getConnection();
             const mongoId = new ObjectId(id);
             const deletedDocument = await connection.collection(this.collection).deleteOne({ _id: mongoId });
-            return deletedDocument?.deletedCount === 1;
+            if (deletedDocument?.deletedCount === 0) {
+                throw new Error(`Couldn't delete a document because it didn't exist: ${id}`);
+            } else if (deletedDocument?.deletedCount > 1) {
+                throw new Error(`Somehow deleted more than 1 document: ${id}`);
+            }
+            return null;
         } catch (error) {
-            const errorMessage = `Error while executing an add query: ${String(error)} - ${JSON.stringify(id)}`;
-            throw new Error(errorMessage);
+            throw new Error(`Error while executing a delete query: ${String(error)} - ${id}`);
         }
     }
 }
-
-export { Crud };

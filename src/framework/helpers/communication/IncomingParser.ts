@@ -1,3 +1,4 @@
+import * as dotObj from "dot-object";
 import { ObjectId } from "mongodb";
 
 import { optionalParse } from "@framework/helpers/optionalParse";
@@ -5,7 +6,9 @@ import { optionalParse } from "@framework/helpers/optionalParse";
 import { CrudOperations } from "@framework/types/database";
 import { LooseObject } from "@framework/types/generic";
 
-export class IncomingParser {
+(dotObj.keepArray as boolean) = true; //eslint-disable-line
+
+export abstract class IncomingParser {
     constructor(typeName: string, crudRequiredArgsEnabled = false) {
         this.crudRouteArgs = {
             search: [{ reqPartName: "parsedQuery", requiredArgList: ["query"] }],
@@ -24,18 +27,24 @@ export class IncomingParser {
     protected lastError: string;
 
     private parseObjectId(obj: LooseObject): LooseObject {
-        for (const key of Object.keys(obj).filter(keyToFilter => ["id", "_id"].includes(keyToFilter))) {
-            if (typeof obj[key] === "string") {
+        const toFilter = dotObj.dot(obj) as LooseObject;
+        const keys = Object.keys(toFilter).filter(
+            keyToFilter => 
+                ["id", "_id"].includes(keyToFilter) || 
+                ["._id", ".id"].some(id => keyToFilter.includes(id))
+        );
+        for (const key of keys) {
+            if (typeof toFilter[key] === "string") {
                 try {
-                    obj[key] = new ObjectId(obj[key] as string);
+                    toFilter[key] = new ObjectId(toFilter[key] as string);
                 } catch (error) {
-                    const errorMessage = `Error while parsing the _id parameter in the incoming object: ${String(error)} - ${obj[key] as string}`;
-                    this.lastError = `Malformed id at key ${key}: ${obj[key] as string}`;
+                    const errorMessage = `Error while parsing the _id parameter in the incoming object: ${String(error)} - ${toFilter[key] as string}`;
+                    this.lastError = errorMessage;
                     throw new Error(errorMessage);
                 }
             }
         }
-        return obj;
+        return dotObj.object(toFilter);
     }
 
     public parseQuery(query: LooseObject | string): LooseObject {
@@ -77,7 +86,6 @@ export class IncomingParser {
             }
             return result;
         });
-        return true;
     }
     public checkUserPresence(obj: LooseObject): boolean {
         const userPresent = typeof obj?.user === "object";

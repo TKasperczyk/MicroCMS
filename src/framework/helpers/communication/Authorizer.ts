@@ -15,7 +15,7 @@ import { LooseObject } from "@framework/types/generic";
 
 (dotObj.keepArray as boolean) = true; //eslint-disable-line
 
-export class Authorizer<InputType> {
+export abstract class Authorizer<InputType> {
     constructor(authorizeMap: AuthorizeMap, typeName: string) {
         this.authorizeMap = authorizeMap;
         this.typeName = typeName;
@@ -24,11 +24,9 @@ export class Authorizer<InputType> {
     private authorizeMap: AuthorizeMap;
     private typeName: string;
 
-    /* eslint-disable @typescript-eslint/no-unused-vars */
-    public customInputLogic(input: InputType): boolean { return true; }
-    public customOutputLogic(response: ApiResult<InputType>, user: LooseObject): ApiResult<InputType> | null { return null; }
-    public customOperationLogic(operation: string): boolean { return true; }
-    /* eslint-enable @typescript-eslint/no-unused-vars */
+    protected abstract customInputLogic(input: InputType): boolean;
+    protected abstract customOutputLogic(response: ApiResult<InputType>, user: LooseObject): ApiResult<InputType> | null;
+    protected abstract customOperationLogic(operation: string): boolean;
 
     public authorizeOutput(response: ApiResult<InputType>, user: LooseObject): ApiResult<InputType> {
         if (!user?.login || !user?.group) {
@@ -52,14 +50,14 @@ export class Authorizer<InputType> {
     public middleware(packet: Event, next: SocketNextFunction): void {
         const { msg, eventName } = extractPacketData(packet);
         if (!msg?.user?.login || !msg?.user?.group) {
-            return next(new SocketError("Malformed or missing user object in the incoming message", msg.id));
+            return next(new SocketError("Malformed or missing user object in the incoming message", msg.requestId));
         }
 
         if (
             !this.authorizeOperation(eventName, this.authorizeMap.group[msg.user.group as string]?.forbiddenOperations || []) ||
             !this.authorizeOperation(eventName, this.authorizeMap.user[msg.user.login as string]?.forbiddenOperations || [])
         ) {
-            return next(new SocketError(`A user tried to perform a forbidden operation ${msg.user.login as string}: ${eventName}`, msg.id));
+            return next(new SocketError(`A user tried to perform a forbidden operation ${msg.user.login as string}: ${eventName}`, msg.requestId));
         }
 
         const inputObj = msg?.parsedBody[this.typeName] as InputType;
@@ -68,7 +66,7 @@ export class Authorizer<InputType> {
                 !this.checkInputObj(inputObj, this.authorizeMap.group[msg.user.group as string]?.forbiddenWriteFields || []) ||
                 !this.checkInputObj(inputObj, this.authorizeMap.user[msg.user.login as string]?.forbiddenWriteFields || [])
             ) {
-                return next(new SocketError(`A user tried to write to forbidden fields ${msg.user.login as string}`, msg.id));
+                return next(new SocketError(`A user tried to write to forbidden fields ${msg.user.login as string}`, msg.requestId));
             }
         }
         next();

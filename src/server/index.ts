@@ -1,41 +1,73 @@
-import { createServer } from "http";
+import express, { Express, json } from "express";
 
-import express, { Express, Request, Response } from "express";
+import { appLogger, reqLogger } from "@framework";
 
-import { RouteMapping, SocketPoolEntry } from "@framework/types/communication/socket";
+import { SocketPoolEntry, CmsMessageResponse } from "@framework/types/communication/socket";
 
-import { Discovery } from "./discovery";
+import { Discovery } from "./Discovery";
+import { RouterManager } from "./RouterManager";
 
-const discovery = new Discovery();
-const app: Express = express();
+const ml = appLogger("server");
+const rl = reqLogger("server");
 
-discovery.initServer();
+let discovery: Discovery, routerManager: RouterManager, app: Express;
+try {
+    discovery = new Discovery();
+    routerManager = new RouterManager();
+    app = express();
+} catch (error) {
+    ml.error(`Failed to create the core modules: ${String(error)}`);
+    process.exit();
+}
+
+try {
+    discovery.initServer();
+} catch (error) {
+    ml.error(`Failed to initialize Discovery ${String(error)}`);
+    process.exit();
+}
+
+app.use(json());
+app.use(routerManager.middleware.bind(routerManager));
 
 discovery.on("register", (socketPoolEntry: SocketPoolEntry) => {
-    console.log("register!", socketPoolEntry);
-    socketPoolEntry.interface.forEach((entry: RouteMapping) => {
-        switch(entry.method) {
-            case "get": {
-                app.get(entry.route, (req, res) => {
-                    console.log("get req");
-                });
-                break;
-            }
-            case "put": {
-                app.put(entry.route, (req, res) => {
-                    console.log("get put");
-                });
-                break;
-            }
-            /*case "get": {
-                app.get(entry.route, (req, res) => {
-                    console.log("get req");
-                });
-                break;
-            }*/
+    ml.info(`Adding new express routes for service: ${socketPoolEntry.serviceId}`);
+    try {
+        routerManager.replace({ [socketPoolEntry.socket.id]: socketPoolEntry } );
+    } catch (error) {
+        ml.error(`Failed to replace the router for service: ${socketPoolEntry.serviceId}: ${String(error)}`);
+        return;
+    }
+    ml.info(`Created new express routes for service: ${socketPoolEntry.serviceId}`);
+
+    socketPoolEntry.socket.on("response", (response: CmsMessageResponse) => {
+        rl.info({ response, requestId: response?.requestId }, "Got a response to a request");
+        let parsedResponse = response;
+        try {
+            parsedResponse = CmsMessageResponse.parse(response);
+        } catch (error) {
+            rl.error({ response, requestId: response?.requestId }, `Failed to parse a response: ${String(error)}`);
+            return;
+        }
+        try {
+            routerManager.respondToRequest(parsedResponse);
+        } catch (error) {
+            rl.error({ response, requestId: response.requestId }, `[Failed to respond to a request: ${String(error)}`);
+            return;
         }
     });
 });
 
-const server = createServer();
-server.listen(2000, "127.0.0.1");
+discovery.on("unregister", (serviceId: string) => {
+    ml.info(`Removing express routes for service: ${serviceId}`);
+    try {
+        routerManager.replace(discovery.sockets);
+    } catch (error) {
+        ml.error(`Failed to replace the router for service: ${serviceId}: ${String(error)}`);
+        return;
+    }
+    ml.info(`Removed express routes for service: ${serviceId}`);
+});
+
+ml.info("Listening on 2000");
+app.listen(2000, "127.0.0.1");

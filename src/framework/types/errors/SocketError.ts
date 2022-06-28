@@ -1,7 +1,7 @@
 export class SocketError extends Error {
-    constructor(message: string, id: string) {
+    constructor(message: string, requestId: string) {
         super(message);
-        this.id = id;
+        this.requestId = requestId;
     }
-    public id: string;
+    public requestId: string;
 }

@@ -34,7 +34,7 @@
                 "pattern": "@framework/types/**"
             }, {
                 "group": "internal",
-                "pattern": "@framework/helpers/**"
+                "pattern": "@framework**"
             }],
             "alphabetize": {
                 "order": "asc",
@@ -46,7 +46,9 @@
             "allowSingleLine": true
         }],
         "space-before-blocks": "off",
-        "@typescript-eslint/space-before-blocks": ["error"],
+        "@typescript-eslint/space-before-blocks": ["error", "always"],
+        "keyword-spacing": "off",
+        "@typescript-eslint/keyword-spacing": ["error"],
         "space-before-function-paren": "off",
         "@typescript-eslint/space-before-function-paren": ["error", {
             "anonymous": "never",

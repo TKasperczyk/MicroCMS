@@ -9,27 +9,38 @@ import { LooseObject } from "@framework/types/generic";
 
 import { extractPacketData } from "./packetData";
 
-export class MessageParser extends IncomingParser {
+export abstract class MessageParser extends IncomingParser {
+    protected abstract preParse(msg: LooseObject, eventName: string): void;
+    protected abstract postParse(msg: CmsMessage, eventName: string, error: string | null): void;
+
     public middleware(packet: Event, next: SocketNextFunction): void {
         const { eventName, msg } = extractPacketData(packet);
         try {
-            packet[1] = { ...packet[1], ...this.parseMessage(msg, eventName as keyof CrudOperations) } as CmsMessage;
+            packet[1] = { ...packet[1], ...this.parseMessage(msg, eventName) } as CmsMessage;
         } catch (error) {
-            return next(new SocketError(String(error), msg.id));
+            this.postParse(msg, eventName, String(error));
+            return next(new SocketError(String(error), msg.requestId));
         }
+        this.postParse(msg, eventName, null);
         next();
     }
-    public parseMessage(msg: LooseObject, crudMethodName: keyof CrudOperations): CmsMessage {
+    public parseMessage(msg: LooseObject, eventName: string): CmsMessage {
+        this.preParse(msg, eventName);
         msg.parsedQuery = this.parseQuery(msg.query as string | LooseObject);
         msg.parsedBody = this.parseBody(msg.body as string | LooseObject);
         msg.parsedParams = this.parseParams(msg.params as string | LooseObject);
 
-        if (this.crudRequiredArgsEnabled && !this.checkCrudRequiredArgs(msg, crudMethodName)) {
+        if (this.crudRequiredArgsEnabled && !this.checkCrudRequiredArgs(msg, eventName as keyof CrudOperations)) {
             throw new Error(`Incomplete or incorrect arguments in the incoming request: ${this.lastError}`);
         }
         if (!this.checkUserPresence(msg)) {
             throw new Error(`Malformed or missing user object in the request: ${this.lastError}`);
         }
-        return msg as CmsMessage;
+        try {
+            return CmsMessage.parse(msg);
+        } catch (error) {
+            console.error(`Error while parsing an incoming CmsMessage: ${String(error)} . Returning malformed`);
+            return msg as CmsMessage;
+        }
     }
 }

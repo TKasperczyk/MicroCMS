@@ -1,7 +1,8 @@
-export interface LooseObject {
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    [key: string]: any
-}
+import { z } from "zod";
+
+export const LooseObject = z.record(z.any());
+export type LooseObject = z.infer<typeof LooseObject>;
+
 export interface StringObject {
     [key: string]: string
 }

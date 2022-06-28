@@ -8,7 +8,7 @@ import { LooseObject } from "@framework/types/generic";
 
 import { sendError } from "./sendError";
 
-export class ReqParser extends IncomingParser {
+export abstract class ReqParser extends IncomingParser {
     private extractCrudMethodNameFromReq(req: Request): string {
         let crudMethodName = "";
         switch (req.method.toLowerCase()) {

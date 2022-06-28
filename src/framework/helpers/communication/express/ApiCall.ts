@@ -5,7 +5,7 @@ import { CmsRequestResponse } from "@framework/types/communication/express";
 
 import { sendError } from "./sendError";
 
-export class ApiCall <ReturnType> {
+export abstract class ApiCall <ReturnType> {
     public async performStandard(res: Response, crudFunction: () => Promise<ApiResult<ReturnType>>): Promise<ApiResult<ReturnType>> {
         return new Promise((resolve) => {
             crudFunction()
