@@ -11,11 +11,12 @@ export abstract class ApiCall <ReturnType> {
     //Resolves to null when it catches an error
     public async performStandard(
         socket: Socket, requestId: string, user: LooseObject,
-        crudFunction: () => Promise<ApiResult<ReturnType>>, outputAuthorizer: (response: ApiResult<ReturnType>, user: LooseObject) => ApiResult<ReturnType>
+        apiFunction: () => Promise<ApiResult<ReturnType>>, 
+        outputAuthorizer: (response: ApiResult<ReturnType>, user: LooseObject) => ApiResult<ReturnType>
     ): Promise<ApiResult<ReturnType> | null> {
         this.prePerform(socket, requestId, user);
         return new Promise((resolve) => {
-            crudFunction()
+            apiFunction()
                 .then((result: ApiResult<ReturnType>) => {
                     this.postPerform(socket, requestId, user, result, null);
                     socket.emit("response", {

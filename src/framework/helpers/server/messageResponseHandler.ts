@@ -6,10 +6,11 @@ import { CmsMessageResponse } from "@framework/types/communication/socket";
 const rl = reqLogger("server");
 
 export const messageResponseHandler = (response: CmsMessageResponse, routerManager: RouterManager): void => {
-    rl.info({ response, requestId: response?.requestId }, "Got a response to a request");
+    rl.info({ requestId: response?.requestId }, "Got a response to a request");
     let parsedResponse = response;
     try {
         parsedResponse = CmsMessageResponse.parse(response);
+        rl.debug({ response: { ...response, data: `${JSON.stringify(response.data).substring(0, 10)}...` }, requestId: response.requestId }, "Parsed the response");
     } catch (error) {
         rl.error({ response, requestId: response?.requestId }, `Failed to parse a response: ${String(error)}`);
         return;
