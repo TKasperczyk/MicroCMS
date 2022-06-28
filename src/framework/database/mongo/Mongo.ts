@@ -46,5 +46,3 @@ export class Mongo {
         return this.connection;
     }
 }
-
-export { ObjectId, Sort };

@@ -91,7 +91,6 @@ export class RouterManager {
                     // TODO: add user info to the log message
                     rl.info({ routeMapping, requestId, routeName }, `A new request to service ${socketPoolEntry.servicePort}, route: ${routeName}, event: ${routeMapping.eventName}`);
                     try {
-                        const parsedRequest = 
                         this.passEventToService(socketPoolEntry.socket, routeMapping.eventName, req, requestId);
                         this.RequestQueue[requestId] = { res, requestId };
                     } catch (error) {

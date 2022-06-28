@@ -5,6 +5,7 @@ import { extractPacketData } from "@framework/helpers/communication/socket/packe
 
 import { ApiResult } from "@framework/types/communication/ApiResult";
 import { AuthorizeMap } from "@framework/types/communication/AuthorizeMap";
+import { CmsMessage } from "@framework/types/communication/socket";
 import { SocketNextFunction } from "@framework/types/communication/socket/SocketNextFunction";
 import { SocketError } from "@framework/types/errors";
 import { LooseObject } from "@framework/types/generic";
@@ -49,27 +50,36 @@ export abstract class Authorizer<InputType> {
     }
     public middleware(packet: Event, next: SocketNextFunction): void {
         const { msg, eventName } = extractPacketData(packet);
-        if (!msg?.user?.login || !msg?.user?.group) {
+        if (!this.checkUserObj(msg)) {
             return next(new SocketError("Malformed or missing user object in the incoming message", msg.requestId));
         }
 
-        if (
-            !this.authorizeOperation(eventName, this.authorizeMap.group[msg.user.group as string]?.forbiddenOperations || []) ||
-            !this.authorizeOperation(eventName, this.authorizeMap.user[msg.user.login as string]?.forbiddenOperations || [])
-        ) {
+        if (!this.canPerformOperation(msg, eventName)) {
             return next(new SocketError(`A user tried to perform a forbidden operation ${msg.user.login as string}: ${eventName}`, msg.requestId));
         }
 
-        const inputObj = msg?.parsedBody[this.typeName] as InputType;
-        if (typeof inputObj === "object") {
-            if (
-                !this.checkInputObj(inputObj, this.authorizeMap.group[msg.user.group as string]?.forbiddenWriteFields || []) ||
-                !this.checkInputObj(inputObj, this.authorizeMap.user[msg.user.login as string]?.forbiddenWriteFields || [])
-            ) {
-                return next(new SocketError(`A user tried to write to forbidden fields ${msg.user.login as string}`, msg.requestId));
-            }
+        if (!this.canUpdateFields(msg)) {
+            return next(new SocketError(`A user tried to write to forbidden fields ${msg.user.login as string}`, msg.requestId));
         }
         next();
+    }
+    private canUpdateFields(msg: CmsMessage): boolean {
+        const inputObj = msg?.parsedBody[this.typeName] as InputType;
+        if (typeof inputObj === "object") {
+            const groupUpdatePermitted = this.checkInputObj(inputObj, this.authorizeMap.group[msg.user.group as string]?.forbiddenWriteFields || []);
+            const userUpdatePermitted = this.checkInputObj(inputObj, this.authorizeMap.user[msg.user.login as string]?.forbiddenWriteFields || []);
+            return (groupUpdatePermitted && userUpdatePermitted);
+        } else {
+            return true;
+        }
+    }
+    private canPerformOperation(msg: CmsMessage, eventName: string): boolean {
+        const groupOperationPermitted = this.authorizeOperation(eventName, this.authorizeMap.group[msg.user.group as string]?.forbiddenOperations || []);
+        const userOperationPermitted = this.authorizeOperation(eventName, this.authorizeMap.user[msg.user.login as string]?.forbiddenOperations || []);
+        return (groupOperationPermitted && userOperationPermitted);
+    }
+    private checkUserObj(msg: CmsMessage): boolean {
+        return (typeof msg?.user?.login === "string" && typeof msg?.user?.group === "string");
     }
     private authorizeOperation(operation: string, forbiddenOperations: string[]): boolean {
         return !forbiddenOperations.includes(operation) && this.customOperationLogic(operation);

@@ -1,6 +1,7 @@
 import express, { Express, json } from "express";
 
-import { appLogger, reqLogger } from "@framework";
+import { appLogger } from "@framework";
+import { messageResponseHandler } from "@framework/helpers/server";
 
 import { SocketPoolEntry, CmsMessageResponse } from "@framework/types/communication/socket";
 
@@ -8,7 +9,6 @@ import { Discovery } from "./Discovery";
 import { RouterManager } from "./RouterManager";
 
 const ml = appLogger("server");
-const rl = reqLogger("server");
 
 let discovery: Discovery, routerManager: RouterManager, app: Express;
 try {
@@ -41,20 +41,7 @@ discovery.on("register", (socketPoolEntry: SocketPoolEntry) => {
     ml.info(`Created new express routes for service: ${socketPoolEntry.serviceId}`);
 
     socketPoolEntry.socket.on("response", (response: CmsMessageResponse) => {
-        rl.info({ response, requestId: response?.requestId }, "Got a response to a request");
-        let parsedResponse = response;
-        try {
-            parsedResponse = CmsMessageResponse.parse(response);
-        } catch (error) {
-            rl.error({ response, requestId: response?.requestId }, `Failed to parse a response: ${String(error)}`);
-            return;
-        }
-        try {
-            routerManager.respondToRequest(parsedResponse);
-        } catch (error) {
-            rl.error({ response, requestId: response.requestId }, `[Failed to respond to a request: ${String(error)}`);
-            return;
-        }
+        messageResponseHandler(response, routerManager);
     });
 });
 

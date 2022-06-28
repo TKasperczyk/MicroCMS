@@ -1,4 +1,5 @@
 import * as dotObj from "dot-object";
+import { ObjectId, Sort, FindCursor, WithId, Document } from "mongodb";
 import { z } from "zod";
 
 import { ApiResult } from "@framework/types/communication";
@@ -6,7 +7,7 @@ import { CrudOperations } from "@framework/types/database";
 import { LooseObject } from "@framework/types/generic";
 import { Factory } from "@framework/types/service";
 
-import { Mongo, ObjectId, Sort } from "./Mongo";
+import { Mongo } from "./Mongo";
 
 export abstract class Crud<ReturnType> implements CrudOperations {
     /**
@@ -55,7 +56,7 @@ export abstract class Crud<ReturnType> implements CrudOperations {
     }
     
     /**
-     * Searches the database and returns an array of results. Parses each document and throws an error if any of them isn't compliant with the provided type
+     * Searches the database and returns an array of results. Parses each document
      * @param {object} arg
      * @param arg.query - the query object that will be passed to mongo
      * @param arg.sort = {} - the sort object compliant with the Sort type - [key as string]: number
@@ -72,19 +73,8 @@ export abstract class Crud<ReturnType> implements CrudOperations {
             }
 
             const connection = await this.mongo.getConnection();
-            //The cursor will be overwritten by the search options
             let cursor = connection.collection(this.collection).find(query);
-
-            const shouldSort = Object.keys(sort).length > 0;
-            if (shouldSort) {
-                cursor = cursor.sort(sort);
-            }
-            if (pageSize > 0) {
-                const skip = pageSize * Math.max((page - 1), 0);
-                cursor = cursor.skip(skip).limit(pageSize);
-            } else if (limit > 0) {
-                cursor = cursor.limit(limit);
-            }
+            cursor = this.applyCursorOptions(cursor, sort, page, pageSize, limit);
 
             try {
                 const result: ReturnType[] = [];
@@ -97,87 +87,67 @@ export abstract class Crud<ReturnType> implements CrudOperations {
                 throw new Error(`Error while conforming a query result to the provided type: ${String(error)} - ${JSON.stringify(query)}`);
             }
         } catch (error) {
-            const errorMessage = `Error while executing a search query: ${String(error)} - ${JSON.stringify(query)}`;
-            throw new Error(errorMessage);
+            throw new Error(`Error while executing a search query: ${String(error)} - ${JSON.stringify(query)}`);
         }
     }
+    /**
+     * Searches the database by using an aggregation pipeline, doesn't parse the output because of possible transformations, which introduces a security risk in terms of Auth.hiddenFields -- TOFIX
+     * @param pipeline - the aggregation pipeline that will be passed to the aggregate function
+     * @returns an array of documents
+     * @throws when there's a mongo execution error
+     */
     public async aggregate(pipeline: LooseObject[]): Promise<ReturnType[]> {
         try {
             const connection = await this.mongo.getConnection();
             const cursor = connection.collection(this.collection).aggregate(pipeline);
 
-            try {
-                const result: ReturnType[] = [];
-                await cursor.forEach((document) => {
-                    const parsedDocument: ReturnType = document as ReturnType;
-                    result.push(parsedDocument);
-                });
-                return result;
-            } catch (error) {
-                throw new Error(`Error while conforming a query result to the provided type: ${String(error)} - ${JSON.stringify(pipeline)}`);
-            }
+            const result: ReturnType[] = [];
+            await cursor.forEach((document) => {
+                // This is wrong - the doc isn't a ReturnType, but changing that to LooseObject would break other classes like ApiCall
+                result.push(document as ReturnType);
+            });
+            return result;
         } catch (error) {
-            const errorMessage = `Error while executing an aggregate query: ${String(error)} - ${JSON.stringify(pipeline)}`;
-            throw new Error(errorMessage);
+            throw new Error(`Error while executing an aggregate query: ${String(error)} - ${JSON.stringify(pipeline)}`);
         }
     }
-    public async get(id: string): Promise<ApiResult<ReturnType> | null> {
+    /**
+     * Returns either one document with the provided id or every document if the id isn't provided. Parses each document
+     * @param id = "" - the id of the document that should be returned
+     * @returns a single document, an array of documents or null if there are no documents with the provided id
+     * @throws when the id is malformed, when at least one of the retrieved documents can't be parsed by the validator, when there's a mongo execution error
+     */
+    public async get(id: string = ""): Promise<ApiResult<ReturnType> | null> {
         try {
-            const connection = await this.mongo.getConnection();
             if (id) {
-                const mongoId = new ObjectId(id);
-                const document = await connection.collection(this.collection).findOne(mongoId);
-                if (!document) {
-                    return null;
-                }
-                try {
-                    const result: ReturnType = this.validator.parse(document) as ReturnType;
-                    return result;
-                } catch (error) {
-                    throw new Error(`Error while conforming a query result to the provided type: ${String(error)}`);
-                }
+                const result = await this.getSingleDocument(id);
+                return result;
             } else {
-                const documents = await connection.collection(this.collection).find().toArray();
-                if (!documents) {
-                    return null;
-                }
-                try {
-                    const result: ReturnType[] = documents.map((document) => {
-                        return this.validator.parse(document) as ReturnType;
-                    });
-                    return result;
-                } catch (error) {
-                    throw new Error(`Error while conforming a query result to the provided type: ${String(error)}`);
-                }
+                const result = await this.getAllDocuments();
+                return result;
             }
         } catch (error) {
-            const errorMessage = `Error while executing a get query: ${String(error)} - ${id.toString()}`;
-            throw new Error(errorMessage);
+            throw new Error(`Error while executing a get query: ${String(error)} - ${id.toString()}`);
         }
     }
+    /**
+     * Creates a new document in the database based on the provided object. Adds default values before inserting it in the database. Handles autoincrement fields. Parses the inserted document
+     * @param documentToAdd - the document to add
+     * @returns the added document
+     * @throws when the factory can't create a document based on the provided object, when the added document can't be parsed by the validator, when there's a mongo execution error, when there's a problem with the autoincrement fields
+     */
     public async add(documentToAdd: ReturnType): Promise<ReturnType> {
         try {
             let documentFromFactory = documentToAdd;
             try {
                 documentFromFactory = this.factory(documentToAdd);
             } catch (error) {
-                const errorMessage = `Error while parsing the incoming object: ${String(error)} - ${JSON.stringify(documentToAdd)}`;
-                throw new Error(errorMessage);
+                throw new Error(`Error while parsing the incoming object: ${String(error)} - ${JSON.stringify(documentToAdd)}`);
             }
-            const connection = await this.mongo.getConnection();
-            if (this.autoIncrementField) {
-                const autoIncrementKey = this.autoIncrementField as keyof ReturnType;
-                if (typeof documentFromFactory[autoIncrementKey] !== "number") {
-                    throw new Error(`The factory didn't produce an object with a proper autoincrement field: ${this.autoIncrementField}: ${JSON.stringify(documentFromFactory)}`);
-                }
 
-                const latestIndex: LooseObject[] = await connection.collection(this.collection).find().project({ [this.autoIncrementField]: 1 }).sort({ [this.autoIncrementField]: -1 }).limit(1).toArray();
-                if (latestIndex && latestIndex.length && typeof latestIndex[0][this.autoIncrementField] === "number") {
-                    (documentFromFactory[autoIncrementKey] as unknown) = (latestIndex[0][this.autoIncrementField] as number) + 1;
-                } else {
-                    (documentFromFactory[autoIncrementKey] as unknown) = 0;
-                }
-            }
+            documentFromFactory = await this.handleAutoincrement(documentFromFactory);
+
+            const connection = await this.mongo.getConnection();
             const insertResult = await connection.collection(this.collection).insertOne(documentFromFactory);
             try {
                 const result: ReturnType = this.validator.parse({ ...documentFromFactory, _id: insertResult.insertedId }) as ReturnType;
@@ -189,7 +159,14 @@ export abstract class Crud<ReturnType> implements CrudOperations {
             throw new Error(`Error while executing an add query: ${String(error)} - ${JSON.stringify(documentToAdd)}`);
         }
     }
-    public async update(id: string, documentToUpdate: ReturnType): Promise<ReturnType | null> {
+    /**
+     * Updates a single document in the database
+     * @param id - the id of the document that should be updated
+     * @param documentToUpdate - an object with fields that should be updated
+     * @returns the updated document
+     * @throws when the id is malformed, when the factory can't create a document based on the provided object, when the updated document can't be parsed by the validator, when there's a mongo execution error, when no documents were updated
+     */
+    public async update(id: string, documentToUpdate: ReturnType): Promise<ReturnType> {
         try {
             const connection = await this.mongo.getConnection();
             const mongoId = new ObjectId(id);
@@ -197,14 +174,11 @@ export abstract class Crud<ReturnType> implements CrudOperations {
             try {
                 this.validator.parse(documentFromFactory);
             } catch (error) {
-                const errorMessage = `Error while parsing the incoming object: ${String(error)} - ${JSON.stringify(documentToUpdate)}`;
-                throw new Error(errorMessage);
+                throw new Error(`Error while parsing the incoming object: ${String(error)} - ${JSON.stringify(documentToUpdate)}`);
             }
-            const dDocumentFromFactory = dotObj.dot(documentFromFactory) as LooseObject;
-            const dDocumentToUpdate = dotObj.dot(documentToUpdate) as LooseObject;
-            for (const key of Object.keys(dDocumentToUpdate)) {
-                dDocumentToUpdate[key] = dDocumentFromFactory[key] as LooseObject;
-            }
+            
+            const dDocumentToUpdate = this.updateDocumentObjWithDefaultsDot(documentFromFactory, documentToUpdate);
+
             const { value } = await connection.collection(this.collection).findOneAndUpdate({ _id: mongoId }, { $set: dotObj.object(dDocumentToUpdate) }, { upsert: false, returnDocument: "after" });
             if (value === null) {
                 throw new Error(`Error while updating an object: the provided id doesn't exist ${id}`);
@@ -219,6 +193,12 @@ export abstract class Crud<ReturnType> implements CrudOperations {
             throw new Error(`Error while executing an update query: ${String(error)} - ${JSON.stringify(documentToUpdate)}`);
         }
     }
+    /**
+     * Deletes a single document from the database
+     * @param id - the id of the document that should be deleted
+     * @returns null
+     * @throws when the id is malformed, when there's a mongo execution error, when the number of deleted documents is different than 1 (0 or > 1)
+     */
     public async delete(id: string): Promise<null> {
         try {
             const connection = await this.mongo.getConnection();
@@ -233,5 +213,122 @@ export abstract class Crud<ReturnType> implements CrudOperations {
         } catch (error) {
             throw new Error(`Error while executing a delete query: ${String(error)} - ${id}`);
         }
+    }
+
+    /**
+     * Returns every document stored in the collection, parses each of them
+     * @returns an array of documents
+     * @throws when there's a mongo execution error, when at least one of the retrieved documents can't be parsed by the validator
+     */
+    private async getAllDocuments(): Promise<ApiResult<ReturnType>> {
+        try {
+            const connection = await this.mongo.getConnection();
+            const documents = await connection.collection(this.collection).find().toArray();
+            if (!documents) {
+                return null;
+            }
+            try {
+                const result: ReturnType[] = documents.map((document) => {
+                    return this.validator.parse(document) as ReturnType;
+                });
+                return result;
+            } catch (error) {
+                throw new Error(`Error while conforming a query result to the provided type: ${String(error)}`);
+            }
+        } catch (error) {
+            throw new Error(`Error while executing a get all documents query: ${String(error)}`);
+        }
+    }
+    /**
+     * Returns a single document from the database with the provided id or null if it can't be found. Parses the returned document.
+     * @param id - the id of the document that should be returned
+     * @returns a single document or null
+     * @throws when the id is malformed, when there's a mongo execution error, when at least one of the retrieved documents can't be parsed by the validator
+     */
+    private async getSingleDocument(id: string): Promise<ApiResult<ReturnType> | null> {
+        try {
+            const connection = await this.mongo.getConnection();
+            const mongoId = new ObjectId(id);
+            const document = await connection.collection(this.collection).findOne(mongoId);
+            if (!document) {
+                return null;
+            }
+            try {
+                const result: ReturnType = this.validator.parse(document) as ReturnType;
+                return result;
+            } catch (error) {
+                throw new Error(`Error while conforming a query result to the provided type: ${String(error)}`);
+            }
+        } catch (error) {
+            throw new Error(`Error while executing a get single document query: ${String(error)} - ${id.toString()}`);
+        }
+    }
+    /**
+     * Adds search options to the cursor and returns it
+     * @param cursor - the cursor retrieved from a collection search query
+     * @param sort - the sort object compliant with the Sort type - [key as string]: number
+     * @param page - if greater than zero, you should also specify the pageSize parameter. Skips the provided number of results
+     * @param pageSize - determines how big each page should be
+     * @param limit - limits the number of results to the provided value. Shouldn't be used with paging
+     * @returns the cursor
+     * @throws when there's a problem with applying the search options
+     */
+    private applyCursorOptions(cursor: FindCursor<WithId<Document>>, sort: Sort, page: number, pageSize: number, limit: number ): FindCursor<WithId<Document>> {
+        try {
+            const shouldSort = Object.keys(sort).length > 0;
+            if (shouldSort) {
+                cursor = cursor.sort(sort);
+            }
+            if (pageSize > 0) {
+                const skip = pageSize * Math.max((page - 1), 0);
+                cursor = cursor.skip(skip).limit(pageSize);
+            } else if (limit > 0) {
+                cursor = cursor.limit(limit);
+            }
+            return cursor;
+        } catch (error) {
+            throw new Error(`Error while applying cursor options: ${String(error)}`);
+        }
+    }
+    /**
+     * If the internal autoincrement array has fields that exist in the provided document, it will find the next biggest value of that field in the database, increment it by one and modify the provided document, then return it
+     * @param documentFromFactory - a document generated by the factory (with default fields)
+     * @returns documentFromFactory
+     * @throws when the provided document doesn't have fields defined in the internal autoincrement array, when there's a mongo execution error
+     */
+    private async handleAutoincrement(documentFromFactory: ReturnType): Promise<ReturnType> {
+        try {
+            const connection = await this.mongo.getConnection();
+            if (this.autoIncrementField) {
+                const autoIncrementKey = this.autoIncrementField as keyof ReturnType;
+                if (typeof documentFromFactory[autoIncrementKey] !== "number") {
+                    throw new Error(`The factory didn't produce an object with a proper autoincrement field: ${this.autoIncrementField}: ${JSON.stringify(documentFromFactory)}`);
+                }
+
+                const latestIndex: LooseObject[] = await connection.collection(this.collection).find().project({ [this.autoIncrementField]: 1 }).sort({ [this.autoIncrementField]: -1 }).limit(1).toArray();
+                if (latestIndex && latestIndex.length && typeof latestIndex[0][this.autoIncrementField] === "number") {
+                    (documentFromFactory[autoIncrementKey] as unknown) = (latestIndex[0][this.autoIncrementField] as number) + 1;
+                } else {
+                    (documentFromFactory[autoIncrementKey] as unknown) = 0;
+                }
+            }
+            return documentFromFactory;
+        } catch (error) {
+            throw new Error(`Error while handling autoincrement: ${String(error)} - ${JSON.stringify(documentFromFactory)}`);
+        }
+    }
+    /**
+     * Adds fields with default values to the provided document based on the object generated by the factory, returns a dotted version of that document
+     * @param documentFromFactory - a document generated by the factory (with default fields)
+     * @param documentToUpdate - the document that should be updated with the default fields
+     * @returns a dotted document object
+     */
+    private updateDocumentObjWithDefaultsDot(documentFromFactory: ReturnType, documentToUpdate: LooseObject): LooseObject {
+        const dDocumentFromFactory = dotObj.dot(documentFromFactory) as LooseObject;
+        const dDocumentToUpdate = dotObj.dot(documentToUpdate) as LooseObject;
+        for (const key of Object.keys(dDocumentToUpdate)) {
+            dDocumentToUpdate[key] = dDocumentFromFactory[key] as LooseObject;
+        }
+        return dDocumentToUpdate;
     }
 }
