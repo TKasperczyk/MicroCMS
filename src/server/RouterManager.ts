@@ -107,7 +107,7 @@ export class RouterManager {
         const payload = {
             user: {
                 login: "test",
-                group: "test"
+                group: "testGroup"
             },
             body: req.body as unknown,
             params: req.params,

@@ -1,15 +1,15 @@
-import { appLogger } from "@framework";
-import { getCrudCallbackFactories, reannounce, boilerplate, getIoServer } from "@framework/helpers/service";
+import { appLogger, reqLogger } from "@framework";
+import { getCrudCallbackFactories, announce, reannounce, boilerplate, getIoServer } from "@framework/helpers/service";
 
-import { netBundleAnnounce } from "./announce";
-import { netBundleApiCall } from "./apiCall";
+import { NetBundleApiCall } from "./ApiCall";
 import { getNetBundleAuthorizer, NetBundleAuthorizer } from "./authorizer";
 import { netBundleCrud } from "./crud";
-import { netBundleMessageParser } from "./parser";
+import { NetBundleMessageParser } from "./MessageParser";
 import { getNetBundleRouteMappings } from "./router";
 import { NetBundle } from "./type";
 
 const ml = appLogger("netBundle");
+const rl = reqLogger("netBundle");
 
 const netBundleRouteMappings = getNetBundleRouteMappings("/settings/netBundle");
 const { io, httpServer } = getIoServer();
@@ -24,22 +24,26 @@ const { io, httpServer } = getIoServer();
         process.exit();
     }
     const netBundleOutputAuthorizer = netBundleAuthorizer.authorizeOutput.bind(netBundleAuthorizer);
+    const netBundleAnnounce = announce.bind(null, "/settings/netBundle", netBundleRouteMappings, ml);
 
     io.on("connection", (socket) => {
         ml.info("The socket is connected with the main server");
-        socket.use(netBundleMessageParser.middleware.bind(netBundleMessageParser));
-        socket.use(netBundleAuthorizer.middleware.bind(netBundleAuthorizer));
+        
         const callbackFactories = getCrudCallbackFactories<NetBundle>(netBundleCrud);
+        const netBundleApiCall = new NetBundleApiCall(socket, netBundleOutputAuthorizer, rl);
+        const netBundleMessageParser = new NetBundleMessageParser(rl, "netBundle", true);
+
         boilerplate<NetBundle>(
-            ml, socket, 
-            netBundleApiCall, netBundleAnnounce, netBundleOutputAuthorizer, netBundleRouteMappings, 
+            ml, rl, socket, 
+            [netBundleMessageParser.middleware.bind(netBundleMessageParser), netBundleAuthorizer.middleware.bind(netBundleAuthorizer)],
+            netBundleApiCall, netBundleAnnounce, netBundleRouteMappings, 
             callbackFactories,
             httpServer
         );
     });
 
     try {
-        const serviceSetup = await reannounce(netBundleAnnounce.bind(null, netBundleRouteMappings));
+        const serviceSetup = await reannounce(netBundleAnnounce);
         httpServer.listen(serviceSetup.port, "127.0.0.1");
         ml.info(`Listening on port ${serviceSetup.port}`);
     } catch (error) {

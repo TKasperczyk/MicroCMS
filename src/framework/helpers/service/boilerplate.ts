@@ -3,21 +3,20 @@ import { Server } from "http";
 import { Logger, LoggerOptions } from "pino";
 import { Socket } from "socket.io";
 
-import { Authorizer } from "@framework/helpers/communication";
 import { ApiCall } from "@framework/helpers/communication/socket";
 import { addPacketId, shutdown } from "@framework/helpers/communication/socket/middleware";
 import { reannounce } from "@framework/helpers/service";
 
-import { CmsMessage, CmsMessageResponse, RouteMapping } from "@framework/types/communication/socket";
+import { CmsMessage, CmsMessageResponse, RouteMapping, SocketMiddleware } from "@framework/types/communication/socket";
 import { SocketError } from "@framework/types/errors";
 import { SetupObject, CallbackFactories } from "@framework/types/service";
 
 export const boilerplate = <ServiceType>(
-    ml: Logger<LoggerOptions>, 
+    ml: Logger<LoggerOptions>, rl: Logger<LoggerOptions>, 
     socket: Socket, 
+    serviceMiddlewares: SocketMiddleware[],
     serviceApiCall: ApiCall<ServiceType>,
     serviceAnnounce: (routes: RouteMapping[]) => Promise<SetupObject>,
-    serviceOutputAuthorizer: InstanceType<typeof Authorizer<ServiceType>>["authorizeOutput"],
     serviceRouteMappings: RouteMapping[],
     callbackFactories: CallbackFactories<ServiceType>,
     httpServer: Server,
@@ -25,16 +24,22 @@ export const boilerplate = <ServiceType>(
     // Add common middleware
     socket.use(shutdown);
     socket.use(addPacketId);
+    serviceMiddlewares.forEach((serviceMiddleware) => {
+        socket.use(serviceMiddleware);
+    });
 
     // Launch listeners based on callbackFactories 
     for (const eventName of Object.keys(callbackFactories)) {
         const callbackFactoriesKey = eventName as keyof typeof callbackFactories;
         ml.debug(`Launching a listener for event: ${eventName}`);
-        socket.on(eventName, (msg: CmsMessage) => serviceApiCall.performStandard(
-            socket, msg.requestId, msg.user, 
-            callbackFactories[callbackFactoriesKey](msg), 
-            serviceOutputAuthorizer
-        ));
+        socket.on(eventName, 
+            (msg: CmsMessage) => 
+                serviceApiCall.performStandard(
+                    msg.requestId, 
+                    msg.user, 
+                    callbackFactories[callbackFactoriesKey](msg)
+                )
+        );
     }
 
     // Check the internal consistency of callbackFactories and serviceRouteMappings - they should correspond to each other
@@ -53,16 +58,25 @@ export const boilerplate = <ServiceType>(
 
     // Add error handling - all errors thrown by internals will be caught here and passed to the main server
     socket.on("error", (error) => {
-        ml.error(`Socket error: ${String(error)}, emitting an error response`);
         const socketError = error as SocketError;
-        const payload = {
-            status: false,
-            data: null,
-            error: socketError.message,
-            returnCode: 500,
-            requestId: socketError.requestId
-        } as CmsMessageResponse;
-        socket.emit("response", payload);
+        ml.error(`Socket error: ${String(socketError)}, emitting an error response`);
+        rl.error({ requestId: socketError?.requestId || "" }, `Socket error: ${String(socketError)}, emitting an error response`);
+        if (typeof socketError === "object" && socketError?.requestId) {
+            const payload = {
+                status: false,
+                data: null,
+                error: socketError.message,
+                returnCode: 500,
+                requestId: socketError.requestId
+            } as CmsMessageResponse;
+            socket.emit("response", payload);
+        } else {
+            let payload: string | unknown = error;
+            try {
+                payload = String(error);
+            } catch (error) { } //eslint-disable-line no-empty
+            socket.emit("fatalError", payload);
+        }
     });
     // Handle disconnections - keep reconnecting 
     socket.on("disconnect", async () => {

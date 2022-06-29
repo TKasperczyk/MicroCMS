@@ -43,6 +43,9 @@ discovery.on("register", (socketPoolEntry: SocketPoolEntry) => {
     socketPoolEntry.socket.on("response", (response: CmsMessageResponse) => {
         messageResponseHandler(response, routerManager);
     });
+    socketPoolEntry.socket.on("fatalError", (error: unknown) => {
+        ml.error({ error }, `Received a fatal error from ${socketPoolEntry.serviceId}. There's a hanging request now`);
+    });
 });
 
 discovery.on("unregister", (serviceId: string) => {

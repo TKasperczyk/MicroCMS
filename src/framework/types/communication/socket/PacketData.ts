@@ -1,6 +1,15 @@
-import { CmsMessage } from "./CmsMessage";
+import { z } from "zod";
 
-export interface PacketData {
+import { CmsMessage, CmsPreMessage } from "./CmsMessage";
+
+export const PacketData = z.object({
     msg: CmsMessage,
-    eventName: string
-}
+    eventName: z.string()
+});
+export type PacketData = z.infer<typeof PacketData>;
+
+export const PrePacketData = z.object({
+    preMsg: CmsPreMessage,
+    eventName: z.string()
+});
+export type PrePacketData = z.infer<typeof PrePacketData>;

@@ -55,11 +55,11 @@ export abstract class Authorizer<InputType> {
         }
 
         if (!this.canPerformOperation(msg, eventName)) {
-            return next(new SocketError(`A user tried to perform a forbidden operation ${msg.user.login as string}: ${eventName}`, msg.requestId));
+            return next(new SocketError(`A user tried to perform a forbidden operation (${msg.user.login as string}): ${eventName}`, msg.requestId));
         }
 
         if (!this.canUpdateFields(msg)) {
-            return next(new SocketError(`A user tried to write to forbidden fields ${msg.user.login as string}`, msg.requestId));
+            return next(new SocketError(`A user (${msg.user.login as string}) tried to write to forbidden fields`, msg.requestId));
         }
         next();
     }

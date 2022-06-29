@@ -22,3 +22,9 @@ export const CmsMessage = z.object({
     authorizer: AuthorizeMapEntry.optional()
 }).passthrough();
 export type CmsMessage = z.infer<typeof CmsMessage>;
+
+export const CmsPreMessage = z.object({ 
+    requestId: z.string(), 
+    user: LooseObject
+}).passthrough();
+export type CmsPreMessage = z.infer<typeof CmsPreMessage>;
