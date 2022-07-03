@@ -1,30 +1,30 @@
 import { z } from "zod";
 
-import { AuthorizeMapEntry } from "@framework/types/communication";
-import { LooseObject } from "@framework/types/generic";
+import { TAuthorizeMapEntry } from "@framework/types/communication/AuthorizeMap";
+import { TLooseObject } from "@framework/types/generic/Object";
 
-export const CmsMessageResponse = z.object({ 
+export const TCmsMessageResponse = z.object({ 
     status: z.boolean(), 
-    data: z.union([LooseObject, z.array(LooseObject), z.null()]), 
+    data: z.union([TLooseObject, z.array(TLooseObject), z.null()]), 
     error: z.string().optional(), 
     requestId: z.string(), 
     returnCode: z.number()
 }).strict();
-export type CmsMessageResponse = z.infer<typeof CmsMessageResponse>;
+export type TCmsMessageResponse = z.infer<typeof TCmsMessageResponse>;
 
-export const CmsMessage = z.object({ 
-    parsedQuery: LooseObject, 
-    parsedBody: LooseObject, 
-    parsedParams: LooseObject, 
+export const TCmsMessage = z.object({ 
+    parsedQuery: TLooseObject, 
+    parsedBody: TLooseObject, 
+    parsedParams: TLooseObject, 
     requestId: z.string(), 
-    error: CmsMessageResponse.optional(), 
-    user: LooseObject, 
-    authorizer: AuthorizeMapEntry.optional()
+    error: TCmsMessageResponse.optional(), 
+    user: TLooseObject, 
+    authorizer: TAuthorizeMapEntry.optional()
 }).passthrough();
-export type CmsMessage = z.infer<typeof CmsMessage>;
+export type TCmsMessage = z.infer<typeof TCmsMessage>;
 
-export const CmsPreMessage = z.object({ 
+export const TCmsPreMessage = z.object({ 
     requestId: z.string(), 
-    user: LooseObject
+    user: TLooseObject
 }).passthrough();
-export type CmsPreMessage = z.infer<typeof CmsPreMessage>;
+export type TCmsPreMessage = z.infer<typeof TCmsPreMessage>;

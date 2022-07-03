@@ -1,6 +1,6 @@
 import { createConnection, Connection } from "mysql2/promise";
 
-import { LooseObject } from "@framework/types/generic";
+import { TLooseObject } from "@framework/types/generic";
 
 export class Mysql {
     constructor(database: string) {
@@ -32,7 +32,7 @@ export class Mysql {
             throw new Error(errorMessage);
         }
     }
-    public async query(query: string, params: string[]): Promise<LooseObject | LooseObject[]> {
+    public async query(query: string, params: string[]): Promise<TLooseObject | TLooseObject[]> {
         if (!this.connection) {
             try {
                 await this.init();

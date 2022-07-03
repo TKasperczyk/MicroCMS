@@ -1,22 +1,22 @@
 import { Event } from "socket.io";
 
-import { CmsMessage, CmsPreMessage, PacketData, PrePacketData } from "@framework/types/communication/socket";
+import { TCmsMessage, TCmsPreMessage, TPacketData, TPrePacketData } from "@framework/types/communication/socket";
 
-export const extractPrePacketData = (packet: Event): PrePacketData => {
-    return PrePacketData.parse({
+export const extractTPrePacketData = (packet: Event): TPrePacketData => {
+    return TPrePacketData.parse({
         eventName: packet[0],
-        preMsg: CmsPreMessage.parse(packet[1])
+        preMsg: TCmsPreMessage.parse(packet[1])
     });
 };
 
-export const extractPacketData = (packet: Event): PacketData => {
-    return PacketData.parse({
+export const extractPacketData = (packet: Event): TPacketData => {
+    return TPacketData.parse({
         eventName: packet[0],
-        msg: CmsMessage.parse(packet[1])
+        msg: TCmsMessage.parse(packet[1])
     });
 };
 
-export const savePacketData = (packetData: PacketData, packet: Event): Event => {
+export const savePacketData = (packetData: TPacketData, packet: Event): Event => {
     if (packet.length > 1) {
         packet[0] = packetData.eventName;
         packet[1] = packetData.msg;

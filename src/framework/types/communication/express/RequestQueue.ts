@@ -1,9 +1,9 @@
 import { Response } from "express";
 
-export interface RequestQueueEntry {
+export interface TRequestQueueEntry {
     res: Response,
     requestId: string
 }
-export interface RequestQueue { 
-    [key: string]: RequestQueueEntry
+export interface TRequestQueue { 
+    [key: string]: TRequestQueueEntry
 }

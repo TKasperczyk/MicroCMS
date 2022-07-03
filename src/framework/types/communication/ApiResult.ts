@@ -1,1 +1,1 @@
-export type ApiResult<ReturnType> = ReturnType | ReturnType[] | null | boolean;
+export type TApiResult<TReturn> = TReturn | TReturn[] | null | boolean;

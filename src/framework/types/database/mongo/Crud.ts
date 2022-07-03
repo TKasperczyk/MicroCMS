@@ -1,9 +1,9 @@
 import { Sort } from "mongodb";
 
-import { LooseObject } from "@framework/types/generic";
+import { TLooseObject } from "@framework/types/generic/Object";
 
-export interface CrudSearchOptions {
-    query: LooseObject, 
+export interface TCrudSearchOptions {
+    query: TLooseObject, 
     sort: Sort, 
     page: number,
     pageSize: number, 

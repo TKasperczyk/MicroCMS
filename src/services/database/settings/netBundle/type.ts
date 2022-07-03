@@ -1,14 +1,14 @@
 import { ObjectId } from "mongodb";
 import { z } from "zod";
 
-import { ServiceType } from "@framework/types/enums";
+import { TServiceType } from "@framework/types/enums";
 
 export const NetBundle = z.object({
     _id: z.instanceof(ObjectId).optional(),
     name: z.string(),
     upMbps: z.number().default(0),
     downMbps: z.number().default(0),
-    availableForService: ServiceType.default("net"),
+    availableForService: TServiceType.default("net"),
     netPrice: z.number().default(0),
     indefinitePrice: z.number().default(0),
     installationIndefinitePrice: z.number().default(0),

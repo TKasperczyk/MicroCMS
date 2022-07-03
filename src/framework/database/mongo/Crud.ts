@@ -2,27 +2,27 @@ import * as dotObj from "dot-object";
 import { ObjectId, Sort, FindCursor, WithId, Document } from "mongodb";
 import { z } from "zod";
 
-import { ApiResult } from "@framework/types/communication";
-import { CrudOperations } from "@framework/types/database";
-import { LooseObject } from "@framework/types/generic";
-import { Factory } from "@framework/types/service";
+import { TApiResult } from "@framework/types/communication";
+import { TCrudOperations } from "@framework/types/database";
+import { TLooseObject } from "@framework/types/generic";
+import { TFactory } from "@framework/types/service";
 
 import { Mongo } from "./Mongo";
 
-export abstract class Crud<ReturnType> implements CrudOperations {
+export abstract class Crud<TReturn> implements TCrudOperations {
     /**
      * 
      * @param database - the name of the database
      * @param collection - the name of the collection
      * @param validator - the ZOD type that allows to parse objects
-     * @param factory - the function that produces a new ReturnType with default values
+     * @param factory - the function that produces a new TReturn with default values
      * @param indexes - a list of fields that should be indexed
      * @param uniqueIndexes - a list of fields that should be unique
      * @param autoIncrementField - a list of fields that should be auto-incremented
      */
     constructor(
         database: string, collection: string,
-        validator: z.ZodTypeAny, factory: Factory<ReturnType>,
+        validator: z.ZodTypeAny, factory: TFactory<TReturn>,
         indexes: string[], uniqueIndexes: string[], autoIncrementField: null | string = null
     ) {
         this.mongo = new Mongo(database);
@@ -37,7 +37,7 @@ export abstract class Crud<ReturnType> implements CrudOperations {
     private mongo: Mongo;
     private collection: string;
     private validator: z.ZodTypeAny;
-    private factory: Factory<ReturnType>;
+    private factory: TFactory<TReturn>;
     private indexes: string[];
     private uniqueIndexes: string[];
     private autoIncrementField: null | string;
@@ -66,7 +66,7 @@ export abstract class Crud<ReturnType> implements CrudOperations {
      * @returns an array of parsed documents
      * @throws when both pageSize and limit are greater than 0, when at least one of the retrieved documents can't be parsed by the validator, when there's a mongo execution error
      */
-    public async search({ query, sort = {}, page = 0, pageSize = 0, limit = 0 }: { query: LooseObject, sort?: Sort, page?: number, pageSize?: number, limit?: number }): Promise<ReturnType[]> {
+    public async search({ query, sort = {}, page = 0, pageSize = 0, limit = 0 }: { query: TLooseObject, sort?: Sort, page?: number, pageSize?: number, limit?: number }): Promise<TReturn[]> {
         try {
             if (pageSize > 0 && limit > 0) {
                 throw new Error("Paging and limiting are mutually exclusive in the Mongo search function");
@@ -77,9 +77,9 @@ export abstract class Crud<ReturnType> implements CrudOperations {
             cursor = this.applyCursorOptions(cursor, sort, page, pageSize, limit);
 
             try {
-                const result: ReturnType[] = [];
+                const result: TReturn[] = [];
                 await cursor.forEach((document) => {
-                    const parsedDocument: ReturnType = this.validator.parse(document) as ReturnType;
+                    const parsedDocument: TReturn = this.validator.parse(document) as TReturn;
                     result.push(parsedDocument);
                 });
                 return result;
@@ -96,15 +96,15 @@ export abstract class Crud<ReturnType> implements CrudOperations {
      * @returns an array of documents
      * @throws when there's a mongo execution error
      */
-    public async aggregate(pipeline: LooseObject[]): Promise<ReturnType[]> {
+    public async aggregate(pipeline: TLooseObject[]): Promise<TReturn[]> {
         try {
             const connection = await this.mongo.getConnection();
             const cursor = connection.collection(this.collection).aggregate(pipeline);
 
-            const result: ReturnType[] = [];
+            const result: TReturn[] = [];
             await cursor.forEach((document) => {
-                // This is wrong - the doc isn't a ReturnType, but changing that to LooseObject would break other classes like ApiCall
-                result.push(document as ReturnType);
+                // This is wrong - the doc isn't a TReturn, but changing that to TLooseObject would break other classes like ApiCall
+                result.push(document as TReturn);
             });
             return result;
         } catch (error) {
@@ -117,7 +117,7 @@ export abstract class Crud<ReturnType> implements CrudOperations {
      * @returns a single document, an array of documents or null if there are no documents with the provided id
      * @throws when the id is malformed, when at least one of the retrieved documents can't be parsed by the validator, when there's a mongo execution error
      */
-    public async get(id = ""): Promise<ApiResult<ReturnType> | null> {
+    public async get(id = ""): Promise<TApiResult<TReturn> | null> {
         try {
             if (id) {
                 const result = await this.getSingleDocument(id);
@@ -136,21 +136,21 @@ export abstract class Crud<ReturnType> implements CrudOperations {
      * @returns the added document
      * @throws when the factory can't create a document based on the provided object, when the added document can't be parsed by the validator, when there's a mongo execution error, when there's a problem with the autoincrement fields
      */
-    public async add(documentToAdd: ReturnType): Promise<ReturnType> {
+    public async add(documentToAdd: TReturn): Promise<TReturn> {
         try {
-            let documentFromFactory = documentToAdd;
+            let documentFromTFactory = documentToAdd;
             try {
-                documentFromFactory = this.factory(documentToAdd);
+                documentFromTFactory = this.factory(documentToAdd);
             } catch (error) {
                 throw new Error(`Error while parsing the incoming object: ${String(error)} - ${JSON.stringify(documentToAdd)}`);
             }
 
-            documentFromFactory = await this.handleAutoincrement(documentFromFactory);
+            documentFromTFactory = await this.handleAutoincrement(documentFromTFactory);
 
             const connection = await this.mongo.getConnection();
-            const insertResult = await connection.collection(this.collection).insertOne(documentFromFactory);
+            const insertResult = await connection.collection(this.collection).insertOne(documentFromTFactory);
             try {
-                const result: ReturnType = this.validator.parse({ ...documentFromFactory, _id: insertResult.insertedId }) as ReturnType;
+                const result: TReturn = this.validator.parse({ ...documentFromTFactory, _id: insertResult.insertedId }) as TReturn;
                 return result;
             } catch (error) {
                 throw new Error(`Error while conforming a query result to the provided type: ${String(error)} - ${JSON.stringify(documentToAdd)}`);
@@ -166,25 +166,25 @@ export abstract class Crud<ReturnType> implements CrudOperations {
      * @returns the updated document
      * @throws when the id is malformed, when the factory can't create a document based on the provided object, when the updated document can't be parsed by the validator, when there's a mongo execution error, when no documents were updated
      */
-    public async update(id: string, documentToUpdate: ReturnType): Promise<ReturnType> {
+    public async update(id: string, documentToUpdate: TReturn): Promise<TReturn> {
         try {
             const connection = await this.mongo.getConnection();
             const mongoId = new ObjectId(id);
-            const documentFromFactory = this.factory(documentToUpdate, true);
+            const documentFromTFactory = this.factory(documentToUpdate, true);
             try {
-                this.validator.parse(documentFromFactory);
+                this.validator.parse(documentFromTFactory);
             } catch (error) {
                 throw new Error(`Error while parsing the incoming object: ${String(error)} - ${JSON.stringify(documentToUpdate)}`);
             }
             
-            const dDocumentToUpdate = this.updateDocumentObjWithDefaultsDot(documentFromFactory, documentToUpdate);
+            const dDocumentToUpdate = this.updateDocumentObjWithDefaultsDot(documentFromTFactory, documentToUpdate);
 
             const { value } = await connection.collection(this.collection).findOneAndUpdate({ _id: mongoId }, { $set: dotObj.object(dDocumentToUpdate) }, { upsert: false, returnDocument: "after" });
             if (value === null) {
                 throw new Error(`Error while updating an object: the provided id doesn't exist ${id}`);
             }
             try {
-                const result: ReturnType = this.validator.parse(value) as ReturnType;
+                const result: TReturn = this.validator.parse(value) as TReturn;
                 return result;
             } catch (error) {
                 throw new Error(`Error while conforming a query result to the provided type: ${String(error)} - ${JSON.stringify(value)}`);
@@ -220,7 +220,7 @@ export abstract class Crud<ReturnType> implements CrudOperations {
      * @returns an array of documents
      * @throws when there's a mongo execution error, when at least one of the retrieved documents can't be parsed by the validator
      */
-    private async getAllDocuments(): Promise<ApiResult<ReturnType>> {
+    private async getAllDocuments(): Promise<TApiResult<TReturn>> {
         try {
             const connection = await this.mongo.getConnection();
             const documents = await connection.collection(this.collection).find().toArray();
@@ -228,8 +228,8 @@ export abstract class Crud<ReturnType> implements CrudOperations {
                 return null;
             }
             try {
-                const result: ReturnType[] = documents.map((document) => {
-                    return this.validator.parse(document) as ReturnType;
+                const result: TReturn[] = documents.map((document) => {
+                    return this.validator.parse(document) as TReturn;
                 });
                 return result;
             } catch (error) {
@@ -245,7 +245,7 @@ export abstract class Crud<ReturnType> implements CrudOperations {
      * @returns a single document or null
      * @throws when the id is malformed, when there's a mongo execution error, when at least one of the retrieved documents can't be parsed by the validator
      */
-    private async getSingleDocument(id: string): Promise<ApiResult<ReturnType> | null> {
+    private async getSingleDocument(id: string): Promise<TApiResult<TReturn> | null> {
         try {
             const connection = await this.mongo.getConnection();
             const mongoId = new ObjectId(id);
@@ -254,7 +254,7 @@ export abstract class Crud<ReturnType> implements CrudOperations {
                 return null;
             }
             try {
-                const result: ReturnType = this.validator.parse(document) as ReturnType;
+                const result: TReturn = this.validator.parse(document) as TReturn;
                 return result;
             } catch (error) {
                 throw new Error(`Error while conforming a query result to the provided type: ${String(error)}`);
@@ -292,42 +292,42 @@ export abstract class Crud<ReturnType> implements CrudOperations {
     }
     /**
      * If the internal autoincrement array has fields that exist in the provided document, it will find the next biggest value of that field in the database, increment it by one and modify the provided document, then return it
-     * @param documentFromFactory - a document generated by the factory (with default fields)
-     * @returns documentFromFactory
+     * @param documentFromTFactory - a document generated by the factory (with default fields)
+     * @returns documentFromTFactory
      * @throws when the provided document doesn't have fields defined in the internal autoincrement array, when there's a mongo execution error
      */
-    private async handleAutoincrement(documentFromFactory: ReturnType): Promise<ReturnType> {
+    private async handleAutoincrement(documentFromTFactory: TReturn): Promise<TReturn> {
         try {
             const connection = await this.mongo.getConnection();
             if (this.autoIncrementField) {
-                const autoIncrementKey = this.autoIncrementField as keyof ReturnType;
-                if (typeof documentFromFactory[autoIncrementKey] !== "number") {
-                    throw new Error(`The factory didn't produce an object with a proper autoincrement field: ${this.autoIncrementField}: ${JSON.stringify(documentFromFactory)}`);
+                const autoIncrementKey = this.autoIncrementField as keyof TReturn;
+                if (typeof documentFromTFactory[autoIncrementKey] !== "number") {
+                    throw new Error(`The factory didn't produce an object with a proper autoincrement field: ${this.autoIncrementField}: ${JSON.stringify(documentFromTFactory)}`);
                 }
 
-                const latestIndex: LooseObject[] = await connection.collection(this.collection).find().project({ [this.autoIncrementField]: 1 }).sort({ [this.autoIncrementField]: -1 }).limit(1).toArray();
+                const latestIndex: TLooseObject[] = await connection.collection(this.collection).find().project({ [this.autoIncrementField]: 1 }).sort({ [this.autoIncrementField]: -1 }).limit(1).toArray();
                 if (latestIndex && latestIndex.length && typeof latestIndex[0][this.autoIncrementField] === "number") {
-                    (documentFromFactory[autoIncrementKey] as unknown) = (latestIndex[0][this.autoIncrementField] as number) + 1;
+                    (documentFromTFactory[autoIncrementKey] as unknown) = (latestIndex[0][this.autoIncrementField] as number) + 1;
                 } else {
-                    (documentFromFactory[autoIncrementKey] as unknown) = 0;
+                    (documentFromTFactory[autoIncrementKey] as unknown) = 0;
                 }
             }
-            return documentFromFactory;
+            return documentFromTFactory;
         } catch (error) {
-            throw new Error(`Error while handling autoincrement: ${String(error)} - ${JSON.stringify(documentFromFactory)}`);
+            throw new Error(`Error while handling autoincrement: ${String(error)} - ${JSON.stringify(documentFromTFactory)}`);
         }
     }
     /**
      * Adds fields with default values to the provided document based on the object generated by the factory, returns a dotted version of that document
-     * @param documentFromFactory - a document generated by the factory (with default fields)
+     * @param documentFromTFactory - a document generated by the factory (with default fields)
      * @param documentToUpdate - the document that should be updated with the default fields
      * @returns a dotted document object
      */
-    private updateDocumentObjWithDefaultsDot(documentFromFactory: ReturnType, documentToUpdate: LooseObject): LooseObject {
-        const dDocumentFromFactory = dotObj.dot(documentFromFactory) as LooseObject;
-        const dDocumentToUpdate = dotObj.dot(documentToUpdate) as LooseObject;
+    private updateDocumentObjWithDefaultsDot(documentFromTFactory: TReturn, documentToUpdate: TLooseObject): TLooseObject {
+        const dDocumentFromTFactory = dotObj.dot(documentFromTFactory) as TLooseObject;
+        const dDocumentToUpdate = dotObj.dot(documentToUpdate) as TLooseObject;
         for (const key of Object.keys(dDocumentToUpdate)) {
-            dDocumentToUpdate[key] = dDocumentFromFactory[key] as LooseObject;
+            dDocumentToUpdate[key] = dDocumentFromTFactory[key] as TLooseObject;
         }
         return dDocumentToUpdate;
     }

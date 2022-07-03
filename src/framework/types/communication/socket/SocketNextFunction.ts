@@ -1,1 +1,1 @@
-export type SocketNextFunction = (err?: Error | undefined) => void;
+export type TSocketNextFunction = (err?: Error | undefined) => void;

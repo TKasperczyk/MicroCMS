@@ -1,4 +1,4 @@
-export class SocketError extends Error {
+export class TSocketError extends Error {
     constructor(message: string, requestId: string) {
         super(message);
         this.requestId = requestId;

@@ -5,13 +5,13 @@ import { NetBundleApiCall } from "./ApiCall";
 import { getNetBundleAuthorizer, NetBundleAuthorizer } from "./authorizer";
 import { netBundleCrud } from "./crud";
 import { NetBundleMessageParser } from "./MessageParser";
-import { getNetBundleRouteMappings } from "./router";
+import { getNetBundleTRouteMappings } from "./router";
 import { NetBundle } from "./type";
 
 const ml = appLogger("netBundle");
 const rl = reqLogger("netBundle");
 
-const netBundleRouteMappings = getNetBundleRouteMappings("/settings/netBundle");
+const netBundleTRouteMappings = getNetBundleTRouteMappings("/settings/netBundle");
 const { io, httpServer } = getIoServer();
 
 (async () => {
@@ -24,7 +24,7 @@ const { io, httpServer } = getIoServer();
         process.exit();
     }
     const netBundleOutputAuthorizer = netBundleAuthorizer.authorizeOutput.bind(netBundleAuthorizer);
-    const netBundleAnnounce = announce.bind(null, "/settings/netBundle", netBundleRouteMappings, ml);
+    const netBundleAnnounce = announce.bind(null, "/settings/netBundle", netBundleTRouteMappings, ml);
 
     io.on("connection", (socket) => {
         ml.info("The socket is connected with the main server");
@@ -36,7 +36,7 @@ const { io, httpServer } = getIoServer();
         boilerplate<NetBundle>(
             ml, rl, socket, 
             [netBundleMessageParser.middleware.bind(netBundleMessageParser), netBundleAuthorizer.middleware.bind(netBundleAuthorizer)],
-            netBundleApiCall, netBundleAnnounce, netBundleRouteMappings, 
+            netBundleApiCall, netBundleAnnounce, netBundleTRouteMappings, 
             callbackFactories,
             httpServer
         );

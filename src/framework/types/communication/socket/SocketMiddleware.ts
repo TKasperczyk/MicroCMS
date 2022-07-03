@@ -1,5 +1,5 @@
 import { Event } from "socket.io";
 
-import { SocketNextFunction } from "@framework/types/communication/socket/SocketNextFunction";
+import { TSocketNextFunction } from "@framework/types/communication/socket/SocketNextFunction";
 
-export type SocketMiddleware = (packet: Event, next: SocketNextFunction) => void;
+export type TSocketMiddleware = (packet: Event, next: TSocketNextFunction) => void;

@@ -5,8 +5,8 @@ import { Socket } from "socket.io-client";
 
 import { appLogger, reqLogger } from "@framework";
 
-import { Methods, RequestQueue, RequestQueueEntry, CmsRequestResponse } from "@framework/types/communication/express";
-import { SocketPool, SocketPoolEntry, CmsMessageResponse } from "@framework/types/communication/socket";
+import { TMethods, TRequestQueue, TRequestQueueEntry, TCmsRequestResponse } from "@framework/types/communication/express";
+import { TSocketPool, TSocketPoolEntry, TCmsMessageResponse } from "@framework/types/communication/socket";
 
 const ml = appLogger("routerManager");
 const rl = reqLogger("routerManager");
@@ -14,28 +14,28 @@ const rl = reqLogger("routerManager");
 export class RouterManager {
     constructor() {
         this.router = Router();
-        this.expressMethods = {
+        this.expressTMethods = {
             get: typeof this.router.get,
             put: typeof this.router.put,
             post: typeof this.router.post,
             delete: typeof this.router.delete
         };
-        this.RequestQueue = {};
+        this.TRequestQueue = {};
     }
 
-    private expressMethods: Methods;
+    private expressTMethods: TMethods;
     private router: Router;
-    private RequestQueue: RequestQueue;
+    private TRequestQueue: TRequestQueue;
 
     public middleware(req: Request, res: Response, next: NextFunction): void {
         return this.router(req, res, next);
     }
-    public replace(socketPool: SocketPool): void {
+    public replace(socketPool: TSocketPool): void {
         ml.info("Replacing the express router");
         this.recreateExpressRouter();
     
         for (const serviceId of Object.keys(socketPool)) {
-            const socketPoolEntry = socketPool[serviceId as keyof SocketPool];
+            const socketPoolEntry = socketPool[serviceId as keyof TSocketPool];
             ml.debug(`Connecting ${serviceId} with express`);
             try {
                 this.connectRouterWithSocket(socketPoolEntry);
@@ -45,22 +45,22 @@ export class RouterManager {
             }
         }
     }
-    public getRequest(requestId: string): RequestQueueEntry {
-        if (!this.RequestQueue[requestId]) {
+    public getRequest(requestId: string): TRequestQueueEntry {
+        if (!this.TRequestQueue[requestId]) {
             throw new Error(`Asking for an unknown request for request ${requestId}`);
         }
-        return this.RequestQueue[requestId as keyof RequestQueue];
+        return this.TRequestQueue[requestId as keyof TRequestQueue];
     }
     public removeRequest(requestId: string): void {
         rl.trace({ requestId }, "Removing a request from the queue");
-        delete this.RequestQueue[requestId];
+        delete this.TRequestQueue[requestId];
     }
-    public respondToRequest(response: CmsMessageResponse) {
+    public respondToRequest(response: TCmsMessageResponse) {
         rl.info({ requestId: response.requestId }, "Responding to a request");
-        let parsedReqResponse: CmsRequestResponse;
+        let parsedReqResponse: TCmsRequestResponse;
         let returnCode = response.returnCode;
         try {
-            parsedReqResponse = CmsRequestResponse.parse({
+            parsedReqResponse = TCmsRequestResponse.parse({
                 error: response.error || "",
                 data: response.data,
                 status: response.status
@@ -78,21 +78,21 @@ export class RouterManager {
         this.removeRequest(response.requestId);
     }
 
-    private connectRouterWithSocket(socketPoolEntry: SocketPoolEntry): void {
-        const expressMethods = this.expressMethods;
+    private connectRouterWithSocket(socketPoolEntry: TSocketPoolEntry): void {
+        const expressTMethods = this.expressTMethods;
         socketPoolEntry.interface.forEach((routeMapping) => {
             ml.trace({ routeMapping }, `Creating a route mapping for service ${socketPoolEntry.serviceId}`);
             try {
-                const foundExpressMethodName = Object.keys(expressMethods).find(expressMethodName => routeMapping.method === expressMethodName) || "get";
+                const foundExpressMethodName = Object.keys(expressTMethods).find(expressMethodName => routeMapping.method === expressMethodName) || "get";
     
                 const routeName = `/api${routeMapping.route}`.replace(/([^:]\/)\/+/g, "$1");
-                this.router[foundExpressMethodName as keyof typeof expressMethods](routeName, (req, res) => {
+                this.router[foundExpressMethodName as keyof typeof expressTMethods](routeName, (req, res) => {
                     const requestId = randomUUID();
                     // TODO: add user info to the log message
                     rl.info({ routeMapping, requestId, routeName }, `A new request to service ${socketPoolEntry.servicePort}, route: ${routeName}, event: ${routeMapping.eventName}`);
                     try {
                         this.passEventToService(socketPoolEntry.socket, routeMapping.eventName, req, requestId);
-                        this.RequestQueue[requestId] = { res, requestId };
+                        this.TRequestQueue[requestId] = { res, requestId };
                     } catch (error) {
                         rl.error({ routeMapping, requestId, routeName }, `Failed to pass a request to the service socket: ${String(error)}`);
                     }

@@ -5,9 +5,9 @@ import { io, Socket } from "socket.io-client";
 
 import { appLogger } from "@framework";
 
-import { DiscoveryPack } from "@framework/types/communication/express";
-import { SocketPool, SocketPoolEntry } from "@framework/types/communication/socket";
-import { SetupObject } from "@framework/types/service";
+import { TDiscoveryPack } from "@framework/types/communication/express";
+import { TSocketPool, TSocketPoolEntry } from "@framework/types/communication/socket";
+import { TSetupObject } from "@framework/types/service";
 
 const ml = appLogger("discovery");
 
@@ -24,7 +24,7 @@ export class Discovery {
     private port: number;
     private nextServicePort: number;
     private httpServer: Express | null;
-    private socketPool: SocketPool | Record<string, never>;
+    private socketPool: TSocketPool | Record<string, never>;
     private emitter: EventEmitter;
 
     public initServer(): void {
@@ -32,9 +32,9 @@ export class Discovery {
         this.httpServer.use(json());
         this.httpServer.post("/discovery", (req, res) => {
             ml.info("A new service request, parsing the discovery pack...");
-            let discoveryPack: DiscoveryPack;
+            let discoveryPack: TDiscoveryPack;
             try {
-                discoveryPack = DiscoveryPack.parse(req.body);
+                discoveryPack = TDiscoveryPack.parse(req.body);
             } catch (error) {
                 ml.error(`Failed to parse the discovery pack: ${String(error)}`);
                 return;
@@ -42,7 +42,7 @@ export class Discovery {
             
             const servicePort = this.nextServicePort++;
             ml.info(`Sending the setup object to: ${discoveryPack.serviceId} with port ${servicePort}`); 
-            res.status(200).json({ port: servicePort } as SetupObject);
+            res.status(200).json({ port: servicePort } as TSetupObject);
             
             ml.info(`Creating a socket for ${discoveryPack.serviceId} and waiting for connection`);
             const socket = io(`http://127.0.0.1:${servicePort}`, {
@@ -74,7 +74,7 @@ export class Discovery {
         this.httpServer.listen(this.port, "127.0.0.1");
         ml.info(`Listening on port ${this.port}`);
     }
-    public on(eventName: string, callback: (payload: any) => void): void { //eslint-disable-line @typescript-eslint/no-explicit-any
+    public on(eventName: string, callback: (...args: any[]) => void): void { //eslint-disable-line @typescript-eslint/no-explicit-any
         this.emitter.on(eventName, callback);
     }
     
@@ -84,11 +84,11 @@ export class Discovery {
     private turnOffSocket(socket: Socket): void {
         socket.offAny().removeAllListeners().close();
     }
-    private registerService(socket: Socket, discoveryPack: DiscoveryPack, servicePort: number): void {
+    private registerService(socket: Socket, discoveryPack: TDiscoveryPack, servicePort: number): void {
         if (typeof this.socketPool[discoveryPack.serviceId] !== "undefined") {
             throw new Error(`Tried to register an already existing service: ${discoveryPack.serviceId}`);
         }
-        const socketPoolEntry: SocketPoolEntry = {
+        const socketPoolEntry: TSocketPoolEntry = {
             interface: discoveryPack.routeMappings,
             socket,
             servicePort,
@@ -98,14 +98,14 @@ export class Discovery {
         this.emitter.emit("register", socketPoolEntry);
     }
     private unregisterService(serviceId: string): void {
-        if (typeof this.socketPool[serviceId]?.socket === "object") {
+        if (this.socketPool[serviceId]?.socket instanceof Socket) {
             this.turnOffSocket(this.socketPool[serviceId].socket);
             delete this.socketPool[serviceId];
         }
         this.emitter.emit("unregister", serviceId);
     }
 
-    get sockets(): SocketPool {
+    get sockets(): TSocketPool {
         return this.socketPool;
     }
 }

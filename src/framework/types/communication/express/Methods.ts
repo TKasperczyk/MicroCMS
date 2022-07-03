@@ -1,4 +1,4 @@
-export interface Methods {
+export interface TMethods {
     get: string,
     put: string,
     post: string,

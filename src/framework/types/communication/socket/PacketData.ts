@@ -1,15 +1,15 @@
 import { z } from "zod";
 
-import { CmsMessage, CmsPreMessage } from "./CmsMessage";
+import { TCmsMessage, TCmsPreMessage } from "@framework/types/communication/socket/CmsMessage";
 
-export const PacketData = z.object({
-    msg: CmsMessage,
+export const TPacketData = z.object({
+    msg: TCmsMessage,
     eventName: z.string()
 });
-export type PacketData = z.infer<typeof PacketData>;
+export type TPacketData = z.infer<typeof TPacketData>;
 
-export const PrePacketData = z.object({
-    preMsg: CmsPreMessage,
+export const TPrePacketData = z.object({
+    preMsg: TCmsPreMessage,
     eventName: z.string()
 });
-export type PrePacketData = z.infer<typeof PrePacketData>;
+export type TPrePacketData = z.infer<typeof TPrePacketData>;

@@ -3,7 +3,7 @@ import express, { Express, json } from "express";
 import { appLogger } from "@framework";
 import { messageResponseHandler } from "@framework/helpers/server";
 
-import { SocketPoolEntry, CmsMessageResponse } from "@framework/types/communication/socket";
+import { TSocketPoolEntry, TCmsMessageResponse } from "@framework/types/communication/socket";
 
 import { Discovery } from "./Discovery";
 import { RouterManager } from "./RouterManager";
@@ -30,7 +30,7 @@ try {
 app.use(json());
 app.use(routerManager.middleware.bind(routerManager));
 
-discovery.on("register", (socketPoolEntry: SocketPoolEntry) => {
+discovery.on("register", (socketPoolEntry: TSocketPoolEntry) => {
     ml.info(`Adding new express routes for service: ${socketPoolEntry.serviceId}`);
     try {
         routerManager.replace({ [socketPoolEntry.socket.id]: socketPoolEntry } );
@@ -40,7 +40,7 @@ discovery.on("register", (socketPoolEntry: SocketPoolEntry) => {
     }
     ml.info(`Created new express routes for service: ${socketPoolEntry.serviceId}`);
 
-    socketPoolEntry.socket.on("response", (response: CmsMessageResponse) => {
+    socketPoolEntry.socket.on("response", (response: TCmsMessageResponse) => {
         messageResponseHandler(response, routerManager);
     });
     socketPoolEntry.socket.on("fatalError", (error: unknown) => {

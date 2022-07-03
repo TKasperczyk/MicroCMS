@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-import { RouteMapping } from "@framework/types/communication/socket/RouteMapping";
+import { TRouteMapping } from "@framework/types/communication/socket/RouteMapping";
 
-export const DiscoveryPack = z.object({
-    routeMappings: z.array(RouteMapping),
+export const TDiscoveryPack = z.object({
+    routeMappings: z.array(TRouteMapping),
     serviceId: z.string()
 }).strict();
-export type DiscoveryPack = z.infer<typeof DiscoveryPack>;
+export type TDiscoveryPack = z.infer<typeof TDiscoveryPack>;

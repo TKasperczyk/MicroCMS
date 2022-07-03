@@ -1,10 +1,11 @@
 import * as dotObj from "dot-object";
 import { ObjectId } from "mongodb";
 
-import { optionalParse } from "@framework/helpers/optionalParse";
+import { isObject } from "@framework/helpers/assertions";
+import { optionalDeepParse } from "@framework/helpers/optionalDeepParse";
 
-import { CrudOperations } from "@framework/types/database";
-import { LooseObject } from "@framework/types/generic";
+import { TCrudOperations } from "@framework/types/database";
+import { TLooseObject } from "@framework/types/generic";
 
 (dotObj.keepArray as boolean) = true; //eslint-disable-line
 
@@ -22,12 +23,12 @@ export abstract class IncomingParser {
         this.lastError = "";
     }
 
-    protected crudRouteArgs: CrudOperations;
+    protected crudRouteArgs: TCrudOperations;
     protected crudRequiredArgsEnabled: boolean;
     protected lastError: string;
 
-    private parseObjectId(obj: LooseObject): LooseObject {
-        const toFilter = dotObj.dot(obj) as LooseObject;
+    private parseObjectId(obj: TLooseObject): TLooseObject {
+        const toFilter = dotObj.dot(obj) as TLooseObject;
         const keys = Object.keys(toFilter).filter(
             keyToFilter => 
                 ["id", "_id"].includes(keyToFilter) || 
@@ -47,20 +48,20 @@ export abstract class IncomingParser {
         return dotObj.object(toFilter);
     }
 
-    public parseQuery(query: LooseObject | string): LooseObject {
-        let parsedQuery = optionalParse(query);
+    public parseQuery(query: TLooseObject | string): TLooseObject {
+        let parsedQuery = optionalDeepParse(query);
         parsedQuery = this.parseObjectId(parsedQuery);
         return parsedQuery;
     }
-    public parseBody(body: LooseObject | string): LooseObject {
-        return optionalParse(body);
+    public parseBody(body: TLooseObject | string): TLooseObject {
+        return optionalDeepParse(body);
     }
-    public parseParams(params: LooseObject | string): LooseObject {
-        let parsedParams = optionalParse(params);
+    public parseParams(params: TLooseObject | string): TLooseObject {
+        let parsedParams = optionalDeepParse(params);
         parsedParams = this.parseObjectId(parsedParams);
         return parsedParams;
     }
-    public checkRequiredArgs(obj: LooseObject, requiredArgList: string[]): boolean {
+    public checkRequiredArgs(obj: TLooseObject, requiredArgList: string[]): boolean {
         const currentArgs = Object.keys(obj);
         return requiredArgList.every((requiredArgName) => {
             const argPresent = currentArgs.includes(requiredArgName);
@@ -77,18 +78,18 @@ export abstract class IncomingParser {
             }
         });
     }
-    public checkCrudRequiredArgs(obj: LooseObject, crudMethodName: keyof CrudOperations): boolean {
+    public checkCrudRequiredArgs(obj: TLooseObject, crudMethodName: keyof TCrudOperations): boolean {
         //eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return
-        return this.crudRouteArgs[crudMethodName].every((crudRouteArg: LooseObject) => {
-            const result = this.checkRequiredArgs(obj[crudRouteArg.reqPartName as string] as LooseObject, crudRouteArg.requiredArgList as string[]);
+        return this.crudRouteArgs[crudMethodName].every((crudRouteArg: TLooseObject) => {
+            const result = this.checkRequiredArgs(obj[crudRouteArg.reqPartName as string] as TLooseObject, crudRouteArg.requiredArgList as string[]);
             if (!result) {
                 this.lastError = `missing one of the required args for ${String(crudRouteArg.reqPartName)} (${JSON.stringify(crudRouteArg.requiredArgList)}): ${JSON.stringify(obj)}`;
             }
             return result;
         });
     }
-    public checkUserPresence(obj: LooseObject): boolean {
-        const userPresent = typeof obj?.user === "object";
+    public checkUserPresence(obj: TLooseObject): boolean {
+        const userPresent = isObject(obj?.user);
         const loginPresent = typeof obj?.user?.login === "string"; //eslint-disable-line @typescript-eslint/no-unsafe-member-access
         const groupPresent = typeof obj?.user?.group === "string"; //eslint-disable-line @typescript-eslint/no-unsafe-member-access
         if (!userPresent) {

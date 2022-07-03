@@ -15,14 +15,14 @@ class Crud {
     private table: string;
     private validator: z.ZodTypeAny;
 
-    /*public async get(id: number): Promise<ReturnType | null> {
+    /*public async get(id: number): Promise<TReturn | null> {
         const query = `SELECT * FROM ${this.table} WHERE id = ?;`;
         try {
             const [rows] = await this.mysql.query(query, [id]);
             if (!rows || !rows.length) {
                 return null;
             }
-            let result: ReturnType;
+            let result: TReturn;
             try {
                 result = this.validator.parse(rows[0]);
             } catch (error) {

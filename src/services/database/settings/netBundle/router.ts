@@ -1,7 +1,7 @@
 import { crudRouteMapping } from "@framework/helpers/communication/socket";
 
-import { RouteMapping } from "@framework/types/communication/socket";
+import { TRouteMapping } from "@framework/types/communication/socket";
 
-export const getNetBundleRouteMappings = (routePrefix: string): RouteMapping[] => {
+export const getNetBundleTRouteMappings = (routePrefix: string): TRouteMapping[] => {
     return crudRouteMapping(routePrefix);
 };

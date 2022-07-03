@@ -1,13 +1,13 @@
 import { Request } from "express";
 import { z } from "zod";
 
-import { LooseObject } from "@framework/types/generic";
+import { TLooseObject } from "@framework/types/generic/Object";
 
-export interface CmsRequest extends Request { parsedQuery: LooseObject, parsedBody: LooseObject, parsedParams: LooseObject }
+export interface TCmsRequest extends Request { parsedQuery: TLooseObject, parsedBody: TLooseObject, parsedParams: TLooseObject }
 
-export const CmsRequestResponse = z.object({
+export const TCmsRequestResponse = z.object({
     status: z.boolean(), 
-    data: z.union([LooseObject, z.array(LooseObject), z.null()]), 
+    data: z.union([TLooseObject, z.array(TLooseObject), z.null()]), 
     error: z.string()
 });
-export type CmsRequestResponse = z.infer<typeof CmsRequestResponse>;
+export type TCmsRequestResponse = z.infer<typeof TCmsRequestResponse>;

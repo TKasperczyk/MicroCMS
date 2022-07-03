@@ -1,6 +1,6 @@
-import { CrudOperations } from "@framework/types/database";
+import { TCrudOperations } from "@framework/types/database";
 
-export const CrudOperationsFactory = (): CrudOperations => {
+export const TCrudOperationsTFactory = (): TCrudOperations => {
     return {
         get: null,
         search: null,
@@ -8,5 +8,5 @@ export const CrudOperationsFactory = (): CrudOperations => {
         add: null,
         update: null,
         delete: null
-    } as CrudOperations;
+    } as TCrudOperations;
 };

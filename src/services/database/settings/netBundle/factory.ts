@@ -1,13 +1,13 @@
 import * as dotObj from "dot-object";
 
-import { LooseObject } from "@framework/types/generic";
-import { Factory } from "@framework/types/service";
+import { TLooseObject } from "@framework/types/generic";
+import { TFactory } from "@framework/types/service";
 
 import { NetBundle, requiredDefaults } from "./type";
 
-export const createNetBundle: Factory<NetBundle> = (netBundle: NetBundle, includeRequired = false): NetBundle => {
+export const createNetBundle: TFactory<NetBundle> = (netBundle: NetBundle, includeRequired = false): NetBundle => {
     if (includeRequired) {
-        const dottedNetBundle = dotObj.dot(netBundle) as LooseObject;
+        const dottedNetBundle = dotObj.dot(netBundle) as TLooseObject;
         for (const key of Object.keys(requiredDefaults)) {
             if (!dottedNetBundle[key as keyof NetBundle]) {
                 dottedNetBundle[key as keyof NetBundle] = requiredDefaults[key];

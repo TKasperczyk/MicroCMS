@@ -1,8 +1,8 @@
 import { z } from "zod";
 
-export const LooseObject = z.record(z.any());
-export type LooseObject = z.infer<typeof LooseObject>;
+export const TLooseObject = z.record(z.any());
+export type TLooseObject = z.infer<typeof TLooseObject>;
 
-export interface StringObject {
+export interface TStringObject {
     [key: string]: string
 }

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export interface CrudOperations {
+export interface TCrudOperations {
     get: any,
     search: any,
     aggregate: any,

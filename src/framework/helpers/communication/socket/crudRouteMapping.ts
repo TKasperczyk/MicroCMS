@@ -1,6 +1,6 @@
-import { RouteMapping } from "@framework/types/communication/socket";
+import { TRouteMapping } from "@framework/types/communication/socket";
 
-export const crudRouteMapping = (routePrefix: string): RouteMapping[] => {
+export const crudRouteMapping = (routePrefix: string): TRouteMapping[] => {
     return [
         { method: "get", eventName: "search", route: `${routePrefix}/search` },
         { method: "get", eventName: "aggregate", route: `${routePrefix}/aggregate` },

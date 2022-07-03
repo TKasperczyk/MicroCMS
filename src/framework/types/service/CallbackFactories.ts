@@ -1,7 +1,7 @@
-import { ApiResult } from "@framework/types/communication";
-import { CmsMessage } from "@framework/types/communication/socket";
+import { TApiResult } from "@framework/types/communication/ApiResult";
+import { TCmsMessage } from "@framework/types/communication/socket/CmsMessage";
 
-export interface CallbackFactories<ReturnType> {
+export interface TCallbackFactories<TReturn> {
     // We need to allow "any" because the API function can have any number of arguments
-    [key: string]: (msg: CmsMessage) => (...args: any) => Promise<ApiResult<ReturnType>> //eslint-disable-line @typescript-eslint/no-explicit-any
+    [key: string]: (msg: TCmsMessage) => (...args: any) => Promise<TApiResult<TReturn>> //eslint-disable-line @typescript-eslint/no-explicit-any
 }

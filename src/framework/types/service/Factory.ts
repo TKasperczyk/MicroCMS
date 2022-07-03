@@ -1,1 +1,1 @@
-export type Factory<ReturnType> = (input: ReturnType, includeRequired?: boolean) => ReturnType;
+export type TFactory<TReturn> = (input: TReturn, includeRequired?: boolean) => TReturn;

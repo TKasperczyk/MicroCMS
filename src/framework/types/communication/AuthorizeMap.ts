@@ -1,14 +1,14 @@
 import { z } from "zod";
 
-export const AuthorizeMapEntry = z.object({
+export const TAuthorizeMapEntry = z.object({
     hiddenReadFields: z.array(z.string()),
     forbiddenWriteFields: z.array(z.string()),
     forbiddenOperations: z.array(z.string())
 }).strict();
-export type AuthorizeMapEntry = z.infer<typeof AuthorizeMapEntry>;
+export type TAuthorizeMapEntry = z.infer<typeof TAuthorizeMapEntry>;
 
-export const AuthorizeMap = z.object({
-    user: z.object({}).catchall(AuthorizeMapEntry),
-    group: z.object({}).catchall(AuthorizeMapEntry)
+export const TAuthorizeMap = z.object({
+    user: z.object({}).catchall(TAuthorizeMapEntry),
+    group: z.object({}).catchall(TAuthorizeMapEntry)
 }).strict();
-export type AuthorizeMap = z.infer<typeof AuthorizeMap>;
+export type TAuthorizeMap = z.infer<typeof TAuthorizeMap>;

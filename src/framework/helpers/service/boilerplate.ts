@@ -7,18 +7,18 @@ import { ApiCall } from "@framework/helpers/communication/socket";
 import { addPacketId, shutdown } from "@framework/helpers/communication/socket/middleware";
 import { reannounce } from "@framework/helpers/service";
 
-import { CmsMessage, CmsMessageResponse, RouteMapping, SocketMiddleware } from "@framework/types/communication/socket";
-import { SocketError } from "@framework/types/errors";
-import { SetupObject, CallbackFactories } from "@framework/types/service";
+import { TCmsMessage, TCmsMessageResponse, TRouteMapping, TSocketMiddleware } from "@framework/types/communication/socket";
+import { TSocketError } from "@framework/types/errors";
+import { TSetupObject, TCallbackFactories } from "@framework/types/service";
 
-export const boilerplate = <ServiceType>(
+export const boilerplate = <TServiceType>(
     ml: Logger<LoggerOptions>, rl: Logger<LoggerOptions>, 
     socket: Socket, 
-    serviceMiddlewares: SocketMiddleware[],
-    serviceApiCall: ApiCall<ServiceType>,
-    serviceAnnounce: (routes: RouteMapping[]) => Promise<SetupObject>,
-    serviceRouteMappings: RouteMapping[],
-    callbackFactories: CallbackFactories<ServiceType>,
+    serviceMiddlewares: TSocketMiddleware[],
+    serviceApiCall: ApiCall<TServiceType>,
+    serviceAnnounce: (routes: TRouteMapping[]) => Promise<TSetupObject>,
+    serviceTRouteMappings: TRouteMapping[],
+    callbackFactories: TCallbackFactories<TServiceType>,
     httpServer: Server,
 ): void => {
     // Add common middleware
@@ -33,7 +33,7 @@ export const boilerplate = <ServiceType>(
         const callbackFactoriesKey = eventName as keyof typeof callbackFactories;
         ml.debug(`Launching a listener for event: ${eventName}`);
         socket.on(eventName, 
-            (msg: CmsMessage) => 
+            (msg: TCmsMessage) => 
                 serviceApiCall.performStandard(
                     msg.requestId, 
                     msg.user, 
@@ -42,33 +42,33 @@ export const boilerplate = <ServiceType>(
         );
     }
 
-    // Check the internal consistency of callbackFactories and serviceRouteMappings - they should correspond to each other
+    // Check the internal consistency of callbackFactories and serviceTRouteMappings - they should correspond to each other
     if (!Object.keys(callbackFactories).every(
         (eventName) => 
-            serviceRouteMappings.map(serviceRouteMapping => serviceRouteMapping.eventName).includes(eventName) )
+            serviceTRouteMappings.map(serviceTRouteMapping => serviceTRouteMapping.eventName).includes(eventName) )
     ) {
-        ml.error({ serviceRouteMappings, callbackFactories: Object.keys(callbackFactories) }, "There are event listeners without route mappings!");
+        ml.error({ serviceTRouteMappings, callbackFactories: Object.keys(callbackFactories) }, "There are event listeners without route mappings!");
     }
-    if (!serviceRouteMappings.map(serviceRouteMapping => serviceRouteMapping.eventName).every(
+    if (!serviceTRouteMappings.map(serviceTRouteMapping => serviceTRouteMapping.eventName).every(
         (eventName) => 
             Object.keys(callbackFactories).includes(eventName) )
     ) {
-        ml.error({ serviceRouteMappings, callbackFactories: Object.keys(callbackFactories) }, "There are route mappings without listeners!");
+        ml.error({ serviceTRouteMappings, callbackFactories: Object.keys(callbackFactories) }, "There are route mappings without listeners!");
     }
 
     // Add error handling - all errors thrown by internals will be caught here and passed to the main server
     socket.on("error", (error) => {
-        const socketError = error as SocketError;
+        const socketError = error as TSocketError;
         ml.error(`Socket error: ${String(socketError)}, emitting an error response`);
         rl.error({ requestId: socketError?.requestId || "" }, `Socket error: ${String(socketError)}, emitting an error response`);
-        if (typeof socketError === "object" && socketError?.requestId) {
+        if (socketError instanceof TSocketError && socketError?.requestId) {
             const payload = {
                 status: false,
                 data: null,
                 error: socketError.message,
                 returnCode: 500,
                 requestId: socketError.requestId
-            } as CmsMessageResponse;
+            } as TCmsMessageResponse;
             socket.emit("response", payload);
         } else {
             let payload: string | unknown = error;
@@ -84,7 +84,7 @@ export const boilerplate = <ServiceType>(
         try {
             httpServer.close();
             socket.offAny().removeAllListeners().disconnect();
-            const serviceSetup = await reannounce(serviceAnnounce.bind(null, serviceRouteMappings));
+            const serviceSetup = await reannounce(serviceAnnounce.bind(null, serviceTRouteMappings));
             httpServer.close();
             httpServer.listen(serviceSetup.port, "127.0.0.1");
         } catch (error) {

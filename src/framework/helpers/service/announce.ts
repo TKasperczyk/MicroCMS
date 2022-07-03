@@ -2,11 +2,11 @@ import { Logger, LoggerOptions } from "pino";
 
 import { wait } from "@framework/helpers";
 
-import { DiscoveryPack } from "@framework/types/communication/express";
-import { RouteMapping } from "@framework/types/communication/socket";
-import { SetupObject } from "@framework/types/service";
+import { TDiscoveryPack } from "@framework/types/communication/express";
+import { TRouteMapping } from "@framework/types/communication/socket";
+import { TSetupObject } from "@framework/types/service";
 
-export const announce = async (serviceId: string, routes: RouteMapping[], ml: Logger<LoggerOptions>): Promise<SetupObject> => {
+export const announce = async (serviceId: string, routes: TRouteMapping[], ml: Logger<LoggerOptions>): Promise<TSetupObject> => {
     ml.debug("Announcing the service");
     let response: Response;
     try {
@@ -17,16 +17,16 @@ export const announce = async (serviceId: string, routes: RouteMapping[], ml: Lo
                 "Accept": "application/json, text/plain, */*",
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({ routeMappings: routes, serviceId } as DiscoveryPack)
+            body: JSON.stringify({ routeMappings: routes, serviceId } as TDiscoveryPack)
         });
     } catch (error) {
         ml.error(`Failed to announce a service ${serviceId}: ${String(error)}`);
         throw new Error(String(error));
     }
-    return SetupObject.parse(await response.json());
+    return TSetupObject.parse(await response.json());
 };
 
-export const reannounce = async (annouce: () => Promise<SetupObject>): Promise<SetupObject> => {
+export const reannounce = async (annouce: () => Promise<TSetupObject>): Promise<TSetupObject> => {
     let unavailable = true, setupObject = { port: 0 };
     while (unavailable) {
         try {

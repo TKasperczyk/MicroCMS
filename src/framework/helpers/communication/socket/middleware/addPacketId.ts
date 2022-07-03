@@ -2,10 +2,12 @@ import { randomUUID } from "crypto";
 
 import { Event } from "socket.io";
 
-import { SocketNextFunction } from "@framework/types/communication/socket";
+import { isObject } from "@framework/helpers/assertions";
 
-export const addPacketId = (packet: Event, next: SocketNextFunction): void => {
-    if (packet.length > 0 && typeof packet[1] === "object") { // This ensures that we will be able to access the immediate properties of packet[1]
+import { TSocketNextFunction } from "@framework/types/communication/socket";
+
+export const addPacketId = (packet: Event, next: TSocketNextFunction): void => {
+    if (packet.length > 0 && isObject(packet[1])) { // This ensures that we will be able to access the immediate properties of packet[1]
         packet[1].requestId = packet[1].requestId ? packet[1].requestId as string : randomUUID(); //eslint-disable-line @typescript-eslint/no-unsafe-member-access
     }
     next();

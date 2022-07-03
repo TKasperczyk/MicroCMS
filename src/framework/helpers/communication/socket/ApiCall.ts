@@ -1,15 +1,15 @@
 import { Logger, LoggerOptions } from "pino";
 import { Socket } from "socket.io";
 
-import { ApiResult } from "@framework/types/communication";
-import { CmsMessageResponse } from "@framework/types/communication/socket";
-import { LooseObject } from "@framework/types/generic";
+import { TApiResult } from "@framework/types/communication";
+import { TCmsMessageResponse } from "@framework/types/communication/socket";
+import { TLooseObject } from "@framework/types/generic";
 
 import { Authorizer } from "../Authorizer";
 
 type AuthorizerType = InstanceType<typeof Authorizer>["authorizeOutput"];
 
-export abstract class ApiCall <ReturnType> {
+export abstract class ApiCall <TReturn> {
     constructor(socket: Socket, outputAuthorizer: AuthorizerType, rl: Logger<LoggerOptions>) {
         this.socket = socket;
         this.outputAuthorizer = outputAuthorizer;
@@ -20,19 +20,19 @@ export abstract class ApiCall <ReturnType> {
     protected outputAuthorizer: AuthorizerType;
     protected rl: Logger<LoggerOptions>;
 
-    protected abstract prePerform(requestId: string, user: LooseObject): void;
-    protected abstract postPerform(requestId: string, user: LooseObject, result: ApiResult<ReturnType> | null, error: Error | null): void;
+    protected abstract prePerform(requestId: string, user: TLooseObject): void;
+    protected abstract postPerform(requestId: string, user: TLooseObject, result: TApiResult<TReturn> | null, error: Error | null): void;
 
     //Resolves to null when it catches an error
     public async performStandard(
-        requestId: string, user: LooseObject,
-        apiFunction: () => Promise<ApiResult<ReturnType>>
-    ): Promise<ApiResult<ReturnType> | null> {
+        requestId: string, user: TLooseObject,
+        apiFunction: () => Promise<TApiResult<TReturn>>
+    ): Promise<TApiResult<TReturn> | null> {
         return new Promise((resolve) => {
             this.rl.info({ requestId, user }, "Executing an API call");
             this.prePerform(requestId, user);
             apiFunction()
-                .then((result: ApiResult<ReturnType>) => {
+                .then((result: TApiResult<TReturn>) => {
                     this.rl.info({ requestId, user, result }, "Successfully executed an API call");
                     this.postPerform(requestId, user, result, null);
                     this.socket.emit("response", {
@@ -41,7 +41,7 @@ export abstract class ApiCall <ReturnType> {
                         error: "",
                         returnCode: 200,
                         requestId
-                    } as CmsMessageResponse);
+                    } as TCmsMessageResponse);
                     resolve(result);
                 })
                 .catch((error: Error) => {

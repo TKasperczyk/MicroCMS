@@ -1,6 +1,6 @@
 import { Socket } from "socket.io-client";
 
-import { RouteMapping } from "./RouteMapping";
+import { TRouteMapping } from "@framework/types/communication/socket/RouteMapping";
 
-export interface SocketPoolEntry { interface: RouteMapping[], socket: Socket, servicePort: number, serviceId: string }
-export interface SocketPool { [key: string]: SocketPoolEntry }
+export interface TSocketPoolEntry { interface: TRouteMapping[], socket: Socket, servicePort: number, serviceId: string }
+export interface TSocketPool { [key: string]: TSocketPoolEntry }

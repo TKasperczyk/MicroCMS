@@ -1,10 +1,10 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-import { LooseObject } from "@framework/types/generic";
+import { TLooseObject } from "@framework/types/generic";
 
-export const getAllModules = (directory: string, { excludeList = [], fileMode = false }: { excludeList?: string[], fileMode?: boolean }): LooseObject => {
-    const importedModules: LooseObject = {};
+export const getAllModules = (directory: string, { excludeList = [], fileMode = false }: { excludeList?: string[], fileMode?: boolean }): TLooseObject => {
+    const importedModules: TLooseObject = {};
     try {
         const fileList = fs.readdirSync(directory, { withFileTypes: true });
         for (const file of fileList) {

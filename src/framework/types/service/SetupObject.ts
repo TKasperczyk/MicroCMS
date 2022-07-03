@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-export const SetupObject = z.object({
+export const TSetupObject = z.object({
     port: z.number()
 });
 
-export type SetupObject = z.infer<typeof SetupObject>;
+export type TSetupObject = z.infer<typeof TSetupObject>;

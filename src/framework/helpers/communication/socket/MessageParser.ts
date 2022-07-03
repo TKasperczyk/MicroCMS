@@ -3,12 +3,12 @@ import { Event } from "socket.io";
 
 import { IncomingParser } from "@framework/helpers/communication/IncomingParser";
 
-import { CmsMessage, CmsPreMessage, SocketNextFunction } from "@framework/types/communication/socket";
-import { CrudOperations } from "@framework/types/database";
-import { SocketError } from "@framework/types/errors";
-import { LooseObject } from "@framework/types/generic";
+import { TCmsMessage, TCmsPreMessage, TSocketNextFunction } from "@framework/types/communication/socket";
+import { TCrudOperations } from "@framework/types/database";
+import { TSocketError } from "@framework/types/errors";
+import { TLooseObject } from "@framework/types/generic";
 
-import { extractPrePacketData } from "./packetData";
+import { extractTPrePacketData } from "./packetData";
 
 export abstract class MessageParser extends IncomingParser {
     constructor(rl: Logger<LoggerOptions>, typeName: string, crudRequiredArgsEnabled = false) {
@@ -18,16 +18,16 @@ export abstract class MessageParser extends IncomingParser {
 
     protected rl: Logger<LoggerOptions>;
 
-    protected abstract preParse(msg: CmsPreMessage, eventName: string): void;
-    protected abstract postParse(msg: CmsMessage | CmsPreMessage, eventName: string, error: string | null): void;
+    protected abstract preParse(msg: TCmsPreMessage, eventName: string): void;
+    protected abstract postParse(msg: TCmsMessage | TCmsPreMessage, eventName: string, error: string | null): void;
 
-    public middleware(packet: Event, next: SocketNextFunction): void {
-        let eventName: string, preMsg: CmsPreMessage, msg: CmsMessage;
+    public middleware(packet: Event, next: TSocketNextFunction): void {
+        let eventName: string, preMsg: TCmsPreMessage, msg: TCmsMessage;
         try {
-            ({ eventName, preMsg } = extractPrePacketData(packet));
+            ({ eventName, preMsg } = extractTPrePacketData(packet));
         } catch (error) {
             this.rl.error({ packet }, `Error while extracting data from an incoming packet: ${String(error)}`);
-            return next(new SocketError(String(error), ""));
+            return next(new TSocketError(String(error), ""));
         }
         this.rl.debug({ requestId: preMsg.requestId || null, preMsg }, `Parsing an incoming message for ${eventName}`); //eslint-disable-line @typescript-eslint/no-unsafe-assignment
         try {
@@ -35,31 +35,31 @@ export abstract class MessageParser extends IncomingParser {
         } catch (error) {
             this.rl.error({ requestId: preMsg.requestId, preMsg }, `Error while parsing an incoming message for ${eventName}: ${String(error)}`);
             this.postParse(preMsg, eventName, String(error));
-            return next(new SocketError(String(error), preMsg.requestId));
+            return next(new TSocketError(String(error), preMsg.requestId));
         }
         packet[1] = msg;
         this.postParse(msg, eventName, null);
         this.rl.debug({ requestId: msg.requestId, msg }, `Successfully parsed an incoming message for ${eventName}`);
         next();
     }
-    public parseMessage(preMsg: CmsPreMessage, eventName: string): CmsMessage {
+    public parseMessage(preMsg: TCmsPreMessage, eventName: string): TCmsMessage {
         this.preParse(preMsg, eventName);
-        const msgToConstruct: LooseObject = { ...preMsg };
-        msgToConstruct.parsedQuery = this.parseQuery(msgToConstruct.query as string | LooseObject);
-        msgToConstruct.parsedBody = this.parseBody(msgToConstruct.body as string | LooseObject);
-        msgToConstruct.parsedParams = this.parseParams(msgToConstruct.params as string | LooseObject);
+        const msgToConstruct: TLooseObject = { ...preMsg };
+        msgToConstruct.parsedQuery = this.parseQuery(msgToConstruct.query as string | TLooseObject);
+        msgToConstruct.parsedBody = this.parseBody(msgToConstruct.body as string | TLooseObject);
+        msgToConstruct.parsedParams = this.parseParams(msgToConstruct.params as string | TLooseObject);
 
-        if (this.crudRequiredArgsEnabled && !this.checkCrudRequiredArgs(msgToConstruct, eventName as keyof CrudOperations)) {
+        if (this.crudRequiredArgsEnabled && !this.checkCrudRequiredArgs(msgToConstruct, eventName as keyof TCrudOperations)) {
             throw new Error(`Incomplete or incorrect arguments in the incoming request: ${this.lastError}`);
         }
         if (!this.checkUserPresence(msgToConstruct)) {
             throw new Error(`Malformed or missing user object in the request: ${this.lastError}`);
         }
         try {
-            return CmsMessage.parse(msgToConstruct);
+            return TCmsMessage.parse(msgToConstruct);
         } catch (error) {
-            this.rl.error({ preMsg, msgToConstruct },`Error while parsing an incoming CmsMessage: ${String(error)}. Returning malformed`);
-            return msgToConstruct as CmsMessage;
+            this.rl.error({ preMsg, msgToConstruct },`Error while parsing an incoming TCmsMessage: ${String(error)}. Returning malformed`);
+            return msgToConstruct as TCmsMessage;
         }
     }
 }
