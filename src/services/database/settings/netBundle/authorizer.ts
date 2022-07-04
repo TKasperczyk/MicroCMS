@@ -7,16 +7,12 @@ import { TNetBundle } from "./type";
 const netBundleTAuthorizeMap: TAuthorizeMap = {
     user: {
         "test": {
-            hiddenReadFields: [],
-            forbiddenWriteFields: [],
-            forbiddenOperations: []
         }
     },
     group: {
         "testGroup": {
             hiddenReadFields: ["name"],
-            forbiddenWriteFields: ["name"],
-            forbiddenOperations: []
+            forbiddenWriteFields: { fields: ["name"], excludedOperations: undefined },
         }
     }
 };

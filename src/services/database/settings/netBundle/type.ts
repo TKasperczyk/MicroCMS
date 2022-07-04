@@ -17,7 +17,7 @@ export const TNetBundle = z.object({
     tvBundleName: z.string().default(""),
     business: z.preprocess((val) => (typeof val === "boolean" || val === 0 || val === 1 ? Boolean(val) : val), z.boolean()).default(false)
 }).strict();
-export type TNetBundle = z.infer<typeof TNetBundle>;
+export type TNetBundle = z.input<typeof TNetBundle>;
 
 export const requiredDefaults: { [key: string]: unknown } = {
     "name": ""

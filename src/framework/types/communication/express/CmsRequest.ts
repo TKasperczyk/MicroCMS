@@ -10,4 +10,4 @@ export const TCmsRequestResponse = z.object({
     data: z.union([TLooseObject, z.array(TLooseObject), z.null()]), 
     error: z.string()
 });
-export type TCmsRequestResponse = z.infer<typeof TCmsRequestResponse>;
+export type TCmsRequestResponse = z.input<typeof TCmsRequestResponse>;

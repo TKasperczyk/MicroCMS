@@ -4,4 +4,4 @@ export const TSetupObject = z.object({
     port: z.number()
 });
 
-export type TSetupObject = z.infer<typeof TSetupObject>;
+export type TSetupObject = z.input<typeof TSetupObject>;

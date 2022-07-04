@@ -17,7 +17,7 @@ import { TLooseObject } from "@framework/types/generic";
 
 export abstract class Authorizer<InputType> {
     constructor(authorizeMap: TAuthorizeMap, typeName: string) {
-        this.authorizeMap = authorizeMap;
+        this.authorizeMap = TAuthorizeMap.parse(authorizeMap);
         this.typeName = typeName;
     }
 
@@ -39,8 +39,15 @@ export abstract class Authorizer<InputType> {
         }
 
         let result: TApiResult<InputType> = response;
-        result = this.hideFields(result, this.authorizeMap.group[user.group as string]?.hiddenReadFields || []);
-        result = this.hideFields(result, this.authorizeMap.user[user.login as string]?.hiddenReadFields || []);
+
+        const groupEntry = this.authorizeMap.group[user.group as string]?.hiddenReadFields;
+        const userEntry = this.authorizeMap.group[user.login as string]?.hiddenReadFields;
+        if (groupEntry) {
+            result = this.hideFields(result, groupEntry);
+        }
+        if (userEntry) {
+            result = this.hideFields(result, userEntry);
+        }
         result = this.customOutputLogic(result, user);
 
         return result;
@@ -55,16 +62,23 @@ export abstract class Authorizer<InputType> {
             return next(new TSocketError(`A user tried to perform a forbidden operation (${msg.user.login as string}): ${eventName}`, msg.requestId));
         }
 
-        if (!this.canUpdateFields(msg)) {
+        if (!this.canUpdateFields(msg, eventName)) {
             return next(new TSocketError(`A user (${msg.user.login as string}) tried to write to forbidden fields`, msg.requestId));
         }
         next();
     }
-    private canUpdateFields(msg: TCmsMessage): boolean {
+    private canUpdateFields(msg: TCmsMessage, eventName: string): boolean {
         const inputObj = msg?.parsedBody[this.typeName] as InputType;
         if (isObject(inputObj)) {
-            const groupUpdatePermitted = this.checkInputObj(inputObj, this.authorizeMap.group[msg.user.group as string]?.forbiddenWriteFields || []);
-            const userUpdatePermitted = this.checkInputObj(inputObj, this.authorizeMap.user[msg.user.login as string]?.forbiddenWriteFields || []);
+            const groupEntry = this.authorizeMap.group[msg.user.group as string]?.forbiddenWriteFields;
+            const userEntry = this.authorizeMap.group[msg.user.login as string]?.forbiddenWriteFields;
+            let groupUpdatePermitted = true, userUpdatePermitted = true;
+            if (groupEntry && !groupEntry.excludedOperations?.includes(eventName)) {
+                groupUpdatePermitted = this.checkInputObj(inputObj, groupEntry.fields || []);
+            }
+            if (userEntry && !userEntry.excludedOperations?.includes(eventName)) {
+                userUpdatePermitted = this.checkInputObj(inputObj, userEntry.fields || []);
+            }
             return (groupUpdatePermitted && userUpdatePermitted);
         } else {
             return true;

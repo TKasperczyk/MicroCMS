@@ -1,4 +1,4 @@
-import { reqLogger } from "@framework";
+import { reqLogger } from "@framework/logger";
 import { RouterManager } from "src/server/RouterManager";
 
 import { TCmsMessageResponse } from "@framework/types/communication/socket";

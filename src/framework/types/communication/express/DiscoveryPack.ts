@@ -6,4 +6,4 @@ export const TDiscoveryPack = z.object({
     routeMappings: z.array(TRouteMapping),
     serviceId: z.string()
 }).strict();
-export type TDiscoveryPack = z.infer<typeof TDiscoveryPack>;
+export type TDiscoveryPack = z.input<typeof TDiscoveryPack>;

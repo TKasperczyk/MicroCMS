@@ -10,7 +10,7 @@ export const TCmsMessageResponse = z.object({
     requestId: z.string(), 
     returnCode: z.number()
 }).strict();
-export type TCmsMessageResponse = z.infer<typeof TCmsMessageResponse>;
+export type TCmsMessageResponse = z.input<typeof TCmsMessageResponse>;
 
 export const TCmsMessage = z.object({ 
     parsedQuery: TLooseObject, 
@@ -21,10 +21,10 @@ export const TCmsMessage = z.object({
     user: TLooseObject, 
     authorizer: TAuthorizeMapEntry.optional()
 }).passthrough();
-export type TCmsMessage = z.infer<typeof TCmsMessage>;
+export type TCmsMessage = z.input<typeof TCmsMessage>;
 
 export const TCmsPreMessage = z.object({ 
     requestId: z.string(), 
     user: TLooseObject
 }).passthrough();
-export type TCmsPreMessage = z.infer<typeof TCmsPreMessage>;
+export type TCmsPreMessage = z.input<typeof TCmsPreMessage>;

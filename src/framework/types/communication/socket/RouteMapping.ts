@@ -5,4 +5,4 @@ export const TRouteMapping = z.object({
     method: z.string(),
     eventName: z.string()
 }).strict();
-export type TRouteMapping = z.infer<typeof TRouteMapping>;
+export type TRouteMapping = z.input<typeof TRouteMapping>;
