@@ -9,7 +9,7 @@ import { Authorizer } from "../Authorizer";
 
 type AuthorizerType = InstanceType<typeof Authorizer>["authorizeOutput"];
 
-export abstract class ApiCall <TReturn> {
+export class ApiCall <TReturn> {
     constructor(socket: Socket, outputAuthorizer: AuthorizerType, rl: Logger<LoggerOptions>) {
         this.socket = socket;
         this.outputAuthorizer = outputAuthorizer;
@@ -20,8 +20,10 @@ export abstract class ApiCall <TReturn> {
     protected outputAuthorizer: AuthorizerType;
     protected rl: Logger<LoggerOptions>;
 
-    protected abstract prePerform(requestId: string, user: TLooseObject): void;
-    protected abstract postPerform(requestId: string, user: TLooseObject, result: TApiResult<TReturn> | null, error: Error | null): void;
+    /* eslint-disable @typescript-eslint/no-unused-vars */
+    protected prePerform(requestId: string, user: TLooseObject): void { return; }
+    protected postPerform(requestId: string, user: TLooseObject, result: TApiResult<TReturn> | null, error: Error | null): void { return; }
+    /* eslint-enable @typescript-eslint/no-unused-vars */
 
     //Resolves to null when it catches an error
     public async performStandard(

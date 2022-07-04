@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { TServiceType } from "@framework/types/enums";
 
-export const NetBundle = z.object({
+export const TNetBundle = z.object({
     _id: z.instanceof(ObjectId).optional(),
     name: z.string(),
     upMbps: z.number().default(0),
@@ -17,7 +17,7 @@ export const NetBundle = z.object({
     tvBundleName: z.string().default(""),
     business: z.preprocess((val) => (typeof val === "boolean" || val === 0 || val === 1 ? Boolean(val) : val), z.boolean()).default(false)
 }).strict();
-export type NetBundle = z.infer<typeof NetBundle>;
+export type TNetBundle = z.infer<typeof TNetBundle>;
 
 export const requiredDefaults: { [key: string]: unknown } = {
     "name": ""

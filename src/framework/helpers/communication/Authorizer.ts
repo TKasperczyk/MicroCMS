@@ -24,9 +24,11 @@ export abstract class Authorizer<InputType> {
     private authorizeMap: TAuthorizeMap;
     private typeName: string;
 
-    protected abstract customInputLogic(input: InputType): boolean;
-    protected abstract customOutputLogic(response: TApiResult<InputType>, user: TLooseObject): TApiResult<InputType> | null;
-    protected abstract customOperationLogic(operation: string): boolean;
+    /* eslint-disable @typescript-eslint/no-unused-vars */
+    protected customInputLogic(input: InputType): boolean { return true; }
+    protected customOutputLogic(response: TApiResult<InputType>, user: TLooseObject): TApiResult<InputType> | null { return response; }
+    protected customOperationLogic(operation: string): boolean { return true; }
+    /* eslint-enable @typescript-eslint/no-unused-vars */
 
     public authorizeOutput(response: TApiResult<InputType>, user: TLooseObject): TApiResult<InputType> {
         if (!user?.login || !user?.group) {
@@ -39,11 +41,7 @@ export abstract class Authorizer<InputType> {
         let result: TApiResult<InputType> = response;
         result = this.hideFields(result, this.authorizeMap.group[user.group as string]?.hiddenReadFields || []);
         result = this.hideFields(result, this.authorizeMap.user[user.login as string]?.hiddenReadFields || []);
-        
-        const customOutputLogicResult = this.customOutputLogic(result, user);
-        if (customOutputLogicResult !== null) {
-            result = customOutputLogicResult;
-        }
+        result = this.customOutputLogic(result, user);
 
         return result;
     }

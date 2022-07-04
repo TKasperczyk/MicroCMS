@@ -1,17 +1,18 @@
 import { appLogger, reqLogger } from "@framework";
+import { Crud } from "@framework/database/mongo";
+import { MessageParser, ApiCall } from "@framework/helpers/communication/socket";
 import { getCrudCallbackFactories, announce, reannounce, boilerplate, getIoServer } from "@framework/helpers/service";
 
-import { NetBundleApiCall } from "./ApiCall";
 import { getNetBundleAuthorizer, NetBundleAuthorizer } from "./authorizer";
-import { netBundleCrud } from "./crud";
-import { NetBundleMessageParser } from "./MessageParser";
-import { getNetBundleTRouteMappings } from "./router";
-import { NetBundle } from "./type";
+import { createNetBundle } from "./factory";
+import { getNetBundleTRouteMappings } from "./routes";
+import { TNetBundle } from "./type";
 
 const ml = appLogger("netBundle");
 const rl = reqLogger("netBundle");
 
 const netBundleTRouteMappings = getNetBundleTRouteMappings("/settings/netBundle");
+const netBundleCrud = new Crud("test", "settings.netBundle", TNetBundle, createNetBundle, [], ["name"]);
 const { io, httpServer } = getIoServer();
 
 (async () => {
@@ -29,13 +30,13 @@ const { io, httpServer } = getIoServer();
     io.on("connection", (socket) => {
         ml.info("The socket is connected with the main server");
         
-        const callbackFactories = getCrudCallbackFactories<NetBundle>(netBundleCrud);
-        const netBundleApiCall = new NetBundleApiCall(socket, netBundleOutputAuthorizer, rl);
-        const netBundleMessageParser = new NetBundleMessageParser(rl, "netBundle", true);
+        const callbackFactories = getCrudCallbackFactories<TNetBundle>(netBundleCrud);
+        const netBundleApiCall = new ApiCall<TNetBundle>(socket, netBundleOutputAuthorizer, rl);
+        const messageParser = new MessageParser(rl, "netBundle", true);
 
-        boilerplate<NetBundle>(
+        boilerplate<TNetBundle>(
             ml, rl, socket, 
-            [netBundleMessageParser.middleware.bind(netBundleMessageParser), netBundleAuthorizer.middleware.bind(netBundleAuthorizer)],
+            [messageParser.middleware.bind(messageParser), netBundleAuthorizer.middleware.bind(netBundleAuthorizer)],
             netBundleApiCall, netBundleAnnounce, netBundleTRouteMappings, 
             callbackFactories,
             httpServer

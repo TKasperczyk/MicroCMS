@@ -10,16 +10,17 @@ import { TLooseObject } from "@framework/types/generic";
 
 import { extractTPrePacketData } from "./packetData";
 
-export abstract class MessageParser extends IncomingParser {
+export class MessageParser extends IncomingParser {
     constructor(rl: Logger<LoggerOptions>, typeName: string, crudRequiredArgsEnabled = false) {
         super(typeName, crudRequiredArgsEnabled);
         this.rl = rl;
     }
 
     protected rl: Logger<LoggerOptions>;
-
-    protected abstract preParse(msg: TCmsPreMessage, eventName: string): void;
-    protected abstract postParse(msg: TCmsMessage | TCmsPreMessage, eventName: string, error: string | null): void;
+    /* eslint-disable @typescript-eslint/no-unused-vars */
+    protected preParse(msg: TCmsPreMessage, eventName: string): void { return; }
+    protected postParse(msg: TCmsMessage | TCmsPreMessage, eventName: string, error: string | null): void { return; }
+    /* eslint-enable @typescript-eslint/no-unused-vars */
 
     public middleware(packet: Event, next: TSocketNextFunction): void {
         let eventName: string, preMsg: TCmsPreMessage, msg: TCmsMessage;
