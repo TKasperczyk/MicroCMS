@@ -1,0 +1,1 @@
+export * from "@framework/types/communication/AuthorizeMap";

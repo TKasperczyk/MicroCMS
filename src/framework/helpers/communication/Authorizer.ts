@@ -15,7 +15,7 @@ import { TLooseObject } from "@framework/types/generic";
 
 (dotObj.keepArray as boolean) = true; //eslint-disable-line
 
-export abstract class Authorizer<InputType> {
+export class Authorizer<InputType> {
     constructor(authorizeMap: TAuthorizeMap, typeName: string) {
         this.authorizeMap = TAuthorizeMap.parse(authorizeMap);
         this.typeName = typeName;

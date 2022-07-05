@@ -11,7 +11,7 @@ export const TAuthorizeMapEntry = z.object({
 export type TAuthorizeMapEntry = z.input<typeof TAuthorizeMapEntry>;
 
 export const TAuthorizeMap = z.object({
-    user: z.object({}).catchall(TAuthorizeMapEntry),
-    group: z.object({}).catchall(TAuthorizeMapEntry)
+    user: z.record(z.string(), TAuthorizeMapEntry),
+    group: z.record(z.string(), TAuthorizeMapEntry)
 }).strict();
 export type TAuthorizeMap = z.input<typeof TAuthorizeMap>;
