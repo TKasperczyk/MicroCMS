@@ -4,26 +4,26 @@ import { ObjectId } from "mongodb";
 import { isObject } from "@framework/helpers/assertions";
 import { optionalDeepParse } from "@framework/helpers/optionalDeepParse";
 
-import { TCrudOperations } from "@framework/types/database";
+import { TCrudRouteArgs } from "@framework/types/communication";
 import { TLooseObject } from "@framework/types/generic";
 
 (dotObj.keepArray as boolean) = true; //eslint-disable-line
 
 export abstract class IncomingParser {
-    constructor(typeName: string, crudRequiredArgsEnabled = false) {
+    constructor(serviceName: string, crudRequiredArgsEnabled = false) {
         this.crudRouteArgs = {
             search: [{ reqPartName: "parsedQuery", requiredArgList: ["query"] }],
             aggregate: [{ reqPartName: "parsedQuery", requiredArgList: ["pipeline"] }],
             get: [{ reqPartName: "parsedParams", requiredArgList: [] }],
-            add: [{ reqPartName: "parsedBody", requiredArgList: [typeName] }],
-            update: [{ reqPartName: "parsedParams", requiredArgList: ["id"] }, { reqPartName: "parsedBody", requiredArgList: [typeName] }],
+            add: [{ reqPartName: "parsedBody", requiredArgList: [serviceName] }],
+            update: [{ reqPartName: "parsedParams", requiredArgList: ["id"] }, { reqPartName: "parsedBody", requiredArgList: [serviceName] }],
             delete: [{ reqPartName: "parsedParams", requiredArgList: ["id"] }],
         };
         this.crudRequiredArgsEnabled = crudRequiredArgsEnabled;
         this.lastError = "";
     }
 
-    protected crudRouteArgs: TCrudOperations;
+    protected crudRouteArgs: TCrudRouteArgs;
     protected crudRequiredArgsEnabled: boolean;
     protected lastError: string;
 
@@ -78,15 +78,19 @@ export abstract class IncomingParser {
             }
         });
     }
-    public checkCrudRequiredArgs(obj: TLooseObject, crudMethodName: keyof TCrudOperations): boolean {
-        //eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return
-        return this.crudRouteArgs[crudMethodName].every((crudRouteArg: TLooseObject) => {
-            const result = this.checkRequiredArgs(obj[crudRouteArg.reqPartName as string] as TLooseObject, crudRouteArg.requiredArgList as string[]);
-            if (!result) {
-                this.lastError = `missing one of the required args for ${String(crudRouteArg.reqPartName)} (${JSON.stringify(crudRouteArg.requiredArgList)}): ${JSON.stringify(obj)}`;
-            }
-            return result;
-        });
+    public checkCrudRequiredArgs(obj: TLooseObject, crudMethodName: string): boolean {
+        const crudRouteArgsKey = crudMethodName as keyof TCrudRouteArgs;
+        if (crudMethodName in this.crudRouteArgs && Array.isArray(this.crudRouteArgs[crudRouteArgsKey])) {
+            return this.crudRouteArgs[crudRouteArgsKey].every((crudRouteArg: TLooseObject) => {
+                const result = this.checkRequiredArgs(obj[crudRouteArg.reqPartName as string] as TLooseObject, crudRouteArg.requiredArgList as string[]);
+                if (!result) {
+                    this.lastError = `missing one of the required args for ${String(crudRouteArg.reqPartName)} (${JSON.stringify(crudRouteArg.requiredArgList)}): ${JSON.stringify(obj)}`;
+                }
+                return result;
+            });
+        } else {
+            return true;
+        }
     }
     public checkUserPresence(obj: TLooseObject): boolean {
         const userPresent = isObject(obj?.user);

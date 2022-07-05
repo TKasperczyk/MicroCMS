@@ -3,3 +3,4 @@ export * as express from "./express";
 export * as database from "../database";
 export * from "./AuthorizeMap";
 export * from "./ApiResult";
+export * from "./CrudRouteArgs";

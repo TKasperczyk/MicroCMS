@@ -4,7 +4,6 @@ import { Event } from "socket.io";
 import { IncomingParser } from "@framework/helpers/communication/IncomingParser";
 
 import { TCmsMessage, TCmsPreMessage, TSocketNextFunction } from "@framework/types/communication/socket";
-import { TCrudOperations } from "@framework/types/database";
 import { TSocketError } from "@framework/types/errors";
 import { TLooseObject } from "@framework/types/generic";
 
@@ -50,7 +49,7 @@ export class MessageParser extends IncomingParser {
         msgToConstruct.parsedBody = this.parseBody(msgToConstruct.body as string | TLooseObject);
         msgToConstruct.parsedParams = this.parseParams(msgToConstruct.params as string | TLooseObject);
 
-        if (this.crudRequiredArgsEnabled && !this.checkCrudRequiredArgs(msgToConstruct, eventName as keyof TCrudOperations)) {
+        if (this.crudRequiredArgsEnabled && !this.checkCrudRequiredArgs(msgToConstruct, eventName)) {
             throw new Error(`Incomplete or incorrect arguments in the incoming request: ${this.lastError}`);
         }
         if (!this.checkUserPresence(msgToConstruct)) {

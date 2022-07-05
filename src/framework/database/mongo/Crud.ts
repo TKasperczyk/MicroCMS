@@ -9,7 +9,7 @@ import { TFactory } from "@framework/types/service";
 
 import { Mongo } from "./Mongo";
 
-export class Crud<TReturn> implements TCrudOperations {
+export class Crud<TReturn> implements TCrudOperations<unknown> {
     /**
      * 
      * @param database - the name of the database

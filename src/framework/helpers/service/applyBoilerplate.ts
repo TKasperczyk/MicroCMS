@@ -11,7 +11,7 @@ import { TCmsMessage, TCmsMessageResponse, TRouteMapping, TSocketMiddleware } fr
 import { TSocketError } from "@framework/types/errors";
 import { TSetupObject, TCallbackFactories } from "@framework/types/service";
 
-export const boilerplate = <TServiceType>(
+export const applyBoilerplate = <TServiceType>(
     ml: Logger<LoggerOptions>, rl: Logger<LoggerOptions>, 
     socket: Socket, 
     serviceMiddlewares: TSocketMiddleware[],

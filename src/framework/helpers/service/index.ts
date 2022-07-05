@@ -1,4 +1,5 @@
 export * from "./announce";
-export * from "./boilerplate";
-export * from "./getCrudCallbackFactories";
+export * from "./applyBoilerplate";
+export * from "./callbackFactories";
+export * from "./authorizer";
 export * from "./getIoServer";

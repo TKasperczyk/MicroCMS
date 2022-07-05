@@ -11,7 +11,9 @@ export const TAuthorizeMapEntry = z.object({
 export type TAuthorizeMapEntry = z.input<typeof TAuthorizeMapEntry>;
 
 export const TAuthorizeMap = z.object({
-    user: z.record(z.string(), TAuthorizeMapEntry),
-    group: z.record(z.string(), TAuthorizeMapEntry)
+    user: z.record(z.string(), TAuthorizeMapEntry).default({}),
+    group: z.record(z.string(), TAuthorizeMapEntry).default({})
 }).strict();
-export type TAuthorizeMap = z.input<typeof TAuthorizeMap>;
+export type TAuthorizeMapOutput = z.output<typeof TAuthorizeMap>;
+export type TAuthorizeMapInput = z.input<typeof TAuthorizeMap>;
+export type TAuthorizeMap = TAuthorizeMapInput;

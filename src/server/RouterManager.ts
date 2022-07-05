@@ -14,24 +14,24 @@ const rl = reqLogger("routerManager");
 export class RouterManager {
     constructor() {
         this.router = Router();
-        this.expressTMethods = {
+        this.expressMethods = {
             get: typeof this.router.get,
             put: typeof this.router.put,
             post: typeof this.router.post,
             delete: typeof this.router.delete
         };
-        this.TRequestQueue = {};
+        this.requestQueue = {};
     }
 
-    private expressTMethods: TMethods;
+    private expressMethods: TMethods;
     private router: Router;
-    private TRequestQueue: TRequestQueue;
+    private requestQueue: TRequestQueue;
 
     public middleware(req: Request, res: Response, next: NextFunction): void {
         return this.router(req, res, next);
     }
     public replace(socketPool: TSocketPool): void {
-        ml.info("Replacing the express router");
+        ml.info(`Replacing the express router. There are ${Object.keys(socketPool).length} sockets in the pool`);
         this.recreateExpressRouter();
     
         for (const serviceId of Object.keys(socketPool)) {
@@ -44,16 +44,28 @@ export class RouterManager {
                 return;
             }
         }
+
+        const expressMethods = this.expressMethods;
+        for (const methodName of Object.keys(expressMethods)) {
+            this.router[methodName as keyof typeof expressMethods]("*", (req, res) => {
+                rl.debug(`Unknown route: ${req.originalUrl} . Returning 404`);
+                res.status(404).json(TCmsRequestResponse.parse({
+                    error: "Not found",
+                    data: null,
+                    status: false
+                }));
+            });
+        }
     }
     public getRequest(requestId: string): TRequestQueueEntry {
-        if (!this.TRequestQueue[requestId]) {
+        if (!this.requestQueue[requestId]) {
             throw new Error(`Asking for an unknown request for request ${requestId}`);
         }
-        return this.TRequestQueue[requestId as keyof TRequestQueue];
+        return this.requestQueue[requestId as keyof TRequestQueue];
     }
     public removeRequest(requestId: string): void {
         rl.trace({ requestId }, "Removing a request from the queue");
-        delete this.TRequestQueue[requestId];
+        delete this.requestQueue[requestId];
     }
     public respondToRequest(response: TCmsMessageResponse) {
         rl.info({ requestId: response.requestId }, "Responding to a request");
@@ -79,20 +91,20 @@ export class RouterManager {
     }
 
     private connectRouterWithSocket(socketPoolEntry: TSocketPoolEntry): void {
-        const expressTMethods = this.expressTMethods;
+        const expressMethods = this.expressMethods;
         socketPoolEntry.interface.forEach((routeMapping) => {
             ml.trace({ routeMapping }, `Creating a route mapping for service ${socketPoolEntry.serviceId}`);
             try {
-                const foundExpressMethodName = Object.keys(expressTMethods).find(expressMethodName => routeMapping.method === expressMethodName) || "get";
+                const foundExpressMethodName = Object.keys(expressMethods).find(expressMethodName => routeMapping.method === expressMethodName) || "get";
     
                 const routeName = `/api${routeMapping.route}`.replace(/([^:]\/)\/+/g, "$1");
-                this.router[foundExpressMethodName as keyof typeof expressTMethods](routeName, (req, res) => {
+                this.router[foundExpressMethodName as keyof typeof expressMethods](routeName, (req, res) => {
                     const requestId = randomUUID();
                     // TODO: add user info to the log message
                     rl.info({ routeMapping, requestId, routeName }, `A new request to service ${socketPoolEntry.servicePort}, route: ${routeName}, event: ${routeMapping.eventName}`);
                     try {
                         this.passEventToService(socketPoolEntry.socket, routeMapping.eventName, req, requestId);
-                        this.TRequestQueue[requestId] = { res, requestId };
+                        this.requestQueue[requestId] = { res, requestId };
                     } catch (error) {
                         rl.error({ routeMapping, requestId, routeName }, `Failed to pass a request to the service socket: ${String(error)}`);
                     }

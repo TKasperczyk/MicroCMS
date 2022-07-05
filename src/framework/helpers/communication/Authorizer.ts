@@ -4,7 +4,7 @@ import { Event } from "socket.io";
 import { isObject } from "@framework/helpers/assertions";
 import { extractPacketData } from "@framework/helpers/communication/socket/packetData";
 
-import { TApiResult, TAuthorizeMap } from "@framework/types/communication";
+import { TApiResult, TAuthorizeMap, TAuthorizeMapOutput } from "@framework/types/communication";
 import { TSocketNextFunction , TCmsMessage } from "@framework/types/communication/socket";
 import { TSocketError } from "@framework/types/errors";
 import { TLooseObject } from "@framework/types/generic";
@@ -16,13 +16,14 @@ import { TLooseObject } from "@framework/types/generic";
 (dotObj.keepArray as boolean) = true; //eslint-disable-line
 
 export class Authorizer<InputType> {
-    constructor(authorizeMap: TAuthorizeMap, typeName: string) {
+    constructor(authorizeMap: TAuthorizeMap, serviceName: string) {
         this.authorizeMap = TAuthorizeMap.parse(authorizeMap);
-        this.typeName = typeName;
+        this.serviceName = serviceName;
     }
 
-    private authorizeMap: TAuthorizeMap;
-    private typeName: string;
+    public authorizeMap: TAuthorizeMapOutput;
+    
+    private serviceName: string;
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
     protected customInputLogic(input: InputType): boolean { return true; }
@@ -68,7 +69,7 @@ export class Authorizer<InputType> {
         next();
     }
     private canUpdateFields(msg: TCmsMessage, eventName: string): boolean {
-        const inputObj = msg?.parsedBody[this.typeName] as InputType;
+        const inputObj = msg?.parsedBody[this.serviceName] as InputType;
         if (isObject(inputObj)) {
             const groupEntry = this.authorizeMap.group[msg.user.group as string]?.forbiddenWriteFields;
             const userEntry = this.authorizeMap.group[msg.user.login as string]?.forbiddenWriteFields;

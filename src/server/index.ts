@@ -33,7 +33,7 @@ app.use(routerManager.middleware.bind(routerManager));
 discovery.on("register", (socketPoolEntry: TSocketPoolEntry) => {
     ml.info(`Adding new express routes for service: ${socketPoolEntry.serviceId}`);
     try {
-        routerManager.replace({ [socketPoolEntry.socket.id]: socketPoolEntry } );
+        routerManager.replace(discovery.sockets);
     } catch (error) {
         ml.error(`Failed to replace the router for service: ${socketPoolEntry.serviceId}: ${String(error)}`);
         return;

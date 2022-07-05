@@ -1,6 +1,6 @@
 import { TCrudOperations } from "@framework/types/database";
 
-export const TCrudOperationsTFactory = (): TCrudOperations => {
+export const TCrudOperationsTFactory = (): TCrudOperations<null> => {
     return {
         get: null,
         search: null,
@@ -8,5 +8,5 @@ export const TCrudOperationsTFactory = (): TCrudOperations => {
         add: null,
         update: null,
         delete: null
-    } as TCrudOperations;
+    };
 };

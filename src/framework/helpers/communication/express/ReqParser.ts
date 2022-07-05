@@ -3,7 +3,6 @@ import { NextFunction, Request, Response } from "express";
 import { IncomingParser } from "@framework/helpers/communication/IncomingParser";
 
 import { TCmsRequest } from "@framework/types/communication/express";
-import { TCrudOperations } from "@framework/types/database";
 import { TLooseObject } from "@framework/types/generic";
 
 import { sendError } from "./sendError";
@@ -53,7 +52,7 @@ export abstract class ReqParser extends IncomingParser {
 
         if (this.crudRequiredArgsEnabled) {
             const crudMethodName = this.extractCrudMethodNameFromReq(req);
-            if (crudMethodName && !this.checkCrudRequiredArgs(req, crudMethodName as keyof TCrudOperations)) {
+            if (crudMethodName && !this.checkCrudRequiredArgs(req, crudMethodName)) {
                 throw new Error(`Incomplete or incorrect arguments in the incoming request: ${this.lastError}`);
             }
         }
