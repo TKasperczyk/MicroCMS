@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import { appLogger, reqLogger } from "@framework";
 import { Crud } from "@framework/database/mongo";
 import { Authorizer } from "@framework/helpers/communication";
@@ -6,22 +8,18 @@ import { getCrudCallbackFactories, getCoreCallbackFactories, getServiceAuthorize
 
 import { TCallbackFactories } from "@framework/types/service";
 
-import { createNetBundle } from "./factory";
-import { getNetBundleRouteMappings } from "./routes";
-import { TNetBundle } from "./type";
+import { createGenericServiceFactory } from "./factory";
+import { getGenericServiceRouteMappings } from "./routes";
 
-const serviceName = "settings.netBundle";
-const servicePath = "/settings/netBundle";
+export const runGenericService = async <TGenericService, TGenericServiceSchema extends z.ZodType<TGenericService>>(serviceName: string, servicePath: string, serviceValidator: TGenericServiceSchema) => {    
+    const ml = appLogger(serviceName);
+    const rl = reqLogger(serviceName);
 
-const ml = appLogger(serviceName);
-const rl = reqLogger(serviceName);
-
-const netBundleRouteMappings = getNetBundleRouteMappings(servicePath);
-const netBundleCrud = new Crud("test", serviceName, TNetBundle, createNetBundle, [], ["name"]);
-const { io, httpServer } = getIoServer();
-
-(async () => {
-    let netBundleAuthorizer: Authorizer<TNetBundle>;
+    const genericServiceRouteMappings = getGenericServiceRouteMappings(servicePath);
+    const genericServiceCrud = new Crud("test", serviceName, serviceValidator, createGenericServiceFactory<TGenericService>(), [], ["name"]);
+    const { io, httpServer } = getIoServer();
+    
+    let netBundleAuthorizer: Authorizer<TGenericService>;
     try {
         await netBundleCrud.init();
         netBundleAuthorizer = await getServiceAuthorizer<TNetBundle>(serviceName);
@@ -62,7 +60,4 @@ const { io, httpServer } = getIoServer();
         ml.error(`Error while announcing the service or launching the HTTP server: ${String(error)}`);
         process.exit();
     }
-})().then().catch((error) => {
-    console.error(`Error while initializing the ${serviceName} service ${String(error)}`);
-    process.exit();
-});
+};

@@ -5,7 +5,7 @@ import { z } from "zod";
 import { TApiResult } from "@framework/types/communication";
 import { TCrudOperations } from "@framework/types/database";
 import { TLooseObject } from "@framework/types/generic";
-import { TFactory } from "@framework/types/service";
+import { TGenericFactory } from "@framework/types/service";
 
 import { Mongo } from "./Mongo";
 
@@ -22,7 +22,7 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
      */
     constructor(
         database: string, collection: string,
-        validator: z.ZodTypeAny, factory: TFactory<TReturn>,
+        validator: z.ZodTypeAny, factory: TGenericFactory<TReturn>, requiredDefaults: 
         indexes: string[], uniqueIndexes: string[], autoIncrementField: null | string = null
     ) {
         this.mongo = new Mongo(database);
@@ -37,7 +37,7 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
     private mongo: Mongo;
     private collection: string;
     private validator: z.ZodTypeAny;
-    private factory: TFactory<TReturn>;
+    private factory: TGenericFactory<TReturn>;
     private indexes: string[];
     private uniqueIndexes: string[];
     private autoIncrementField: null | string;
@@ -140,7 +140,7 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
         try {
             let documentFromTFactory = documentToAdd;
             try {
-                documentFromTFactory = this.factory(documentToAdd);
+                documentFromTFactory = this.factory(documentToAdd, this.validator, );
             } catch (error) {
                 throw new Error(`Error while parsing the incoming object: ${String(error)} - ${JSON.stringify(documentToAdd)}`);
             }

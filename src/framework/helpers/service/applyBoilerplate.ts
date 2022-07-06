@@ -17,7 +17,7 @@ export const applyBoilerplate = <TServiceType>(
     serviceMiddlewares: TSocketMiddleware[],
     serviceApiCall: ApiCall<TServiceType>,
     serviceAnnounce: (routes: TRouteMapping[]) => Promise<TSetupObject>,
-    serviceTRouteMappings: TRouteMapping[],
+    serviceRouteMappings: TRouteMapping[],
     callbackFactories: TCallbackFactories<TServiceType>,
     httpServer: Server,
 ): void => {
@@ -42,18 +42,18 @@ export const applyBoilerplate = <TServiceType>(
         );
     }
 
-    // Check the internal consistency of callbackFactories and serviceTRouteMappings - they should correspond to each other
+    // Check the internal consistency of callbackFactories and serviceRouteMappings - they should correspond to each other
     if (!Object.keys(callbackFactories).every(
         (eventName) => 
-            serviceTRouteMappings.map(serviceTRouteMapping => serviceTRouteMapping.eventName).includes(eventName) )
+            serviceRouteMappings.map(serviceTRouteMapping => serviceTRouteMapping.eventName).includes(eventName) )
     ) {
-        ml.error({ serviceTRouteMappings, callbackFactories: Object.keys(callbackFactories) }, "There are event listeners without route mappings!");
+        ml.error({ serviceRouteMappings, callbackFactories: Object.keys(callbackFactories) }, "There are event listeners without route mappings!");
     }
-    if (!serviceTRouteMappings.map(serviceTRouteMapping => serviceTRouteMapping.eventName).every(
+    if (!serviceRouteMappings.map(serviceTRouteMapping => serviceTRouteMapping.eventName).every(
         (eventName) => 
             Object.keys(callbackFactories).includes(eventName) )
     ) {
-        ml.error({ serviceTRouteMappings, callbackFactories: Object.keys(callbackFactories) }, "There are route mappings without listeners!");
+        ml.error({ serviceRouteMappings, callbackFactories: Object.keys(callbackFactories) }, "There are route mappings without listeners!");
     }
 
     // Add error handling - all errors thrown by internals will be caught here and passed to the main server
@@ -84,7 +84,7 @@ export const applyBoilerplate = <TServiceType>(
         try {
             httpServer.close();
             socket.offAny().removeAllListeners().disconnect();
-            const serviceSetup = await reannounce(serviceAnnounce.bind(null, serviceTRouteMappings));
+            const serviceSetup = await reannounce(serviceAnnounce.bind(null, serviceRouteMappings));
             httpServer.close();
             httpServer.listen(serviceSetup.port, "127.0.0.1");
         } catch (error) {

@@ -1,7 +1,7 @@
-import { getCrudRouteMapping } from "@framework/helpers/communication/socket";
+import { getCrudRouteMappings } from "@framework/helpers/communication/socket";
 
 import { TRouteMapping } from "@framework/types/communication/socket";
 
-export const getServiceAuthorizeMapTRouteMappings = (routePrefix: string): TRouteMapping[] => {
-    return getCrudRouteMapping(routePrefix);
+export const getServiceAuthorizeMapRouteMappings = (routePrefix: string): TRouteMapping[] => {
+    return getCrudRouteMappings(routePrefix);
 };

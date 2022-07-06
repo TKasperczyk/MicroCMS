@@ -5,16 +5,16 @@ import { getCrudCallbackFactories, announce, reannounce, applyBoilerplate, getIo
 
 import { getServiceAuthorizeMapAuthorizer, ServiceAuthorizeMapAuthorizer } from "./authorizer";
 import { createServiceAuthorizeMap } from "./factory";
-import { getServiceAuthorizeMapTRouteMappings } from "./routes";
+import { getServiceAuthorizeMapRouteMappings } from "./routes";
 import { TServiceAuthorizeMap } from "./type";
-
-const ml = appLogger("serviceAuthorizeMap");
-const rl = reqLogger("serviceAuthorizeMap");
 
 const serviceName = "core.serviceAuthorizeMap";
 const servicePath = "/core/serviceAuthorizeMap";
 
-const serviceAuthorizeMapTRouteMappings = getServiceAuthorizeMapTRouteMappings(servicePath);
+const ml = appLogger(serviceName);
+const rl = reqLogger(serviceName);
+
+const serviceAuthorizeMapRouteMappings = getServiceAuthorizeMapRouteMappings(servicePath);
 const serviceAuthorizeMapCrud = new Crud("test", serviceName, TServiceAuthorizeMap, createServiceAuthorizeMap, [], ["serviceName"]);
 const { io, httpServer } = getIoServer();
 
@@ -28,7 +28,7 @@ const { io, httpServer } = getIoServer();
         process.exit();
     }
     const serviceAuthorizeMapOutputAuthorizer = serviceAuthorizeMapAuthorizer.authorizeOutput.bind(serviceAuthorizeMapAuthorizer);
-    const serviceAuthorizeMapAnnounce = announce.bind(null, servicePath, serviceAuthorizeMapTRouteMappings, ml);
+    const serviceAuthorizeMapAnnounce = announce.bind(null, servicePath, serviceAuthorizeMapRouteMappings, ml);
 
     io.on("connection", (socket) => {
         ml.info("The socket is connected with the main server");
@@ -40,7 +40,7 @@ const { io, httpServer } = getIoServer();
         applyBoilerplate<TServiceAuthorizeMap>(
             ml, rl, socket, 
             [messageParser.middleware.bind(messageParser), serviceAuthorizeMapAuthorizer.middleware.bind(serviceAuthorizeMapAuthorizer)],
-            serviceAuthorizeMapApiCall, serviceAuthorizeMapAnnounce, serviceAuthorizeMapTRouteMappings, 
+            serviceAuthorizeMapApiCall, serviceAuthorizeMapAnnounce, serviceAuthorizeMapRouteMappings, 
             callbackFactories,
             httpServer
         );

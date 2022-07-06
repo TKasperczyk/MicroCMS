@@ -1,6 +1,6 @@
 import { TRouteMapping } from "@framework/types/communication/socket";
 
-export const getCrudRouteMapping = (routePrefix: string): TRouteMapping[] => {
+export const getCrudRouteMappings = (routePrefix: string): TRouteMapping[] => {
     return [
         { method: "get", eventName: "search", route: `${routePrefix}/search` },
         { method: "get", eventName: "aggregate", route: `${routePrefix}/aggregate` },
@@ -11,7 +11,7 @@ export const getCrudRouteMapping = (routePrefix: string): TRouteMapping[] => {
     ];
 };
 
-export const getCoreRouteMapping = (routePrefix: string): TRouteMapping[] => {
+export const getCoreRouteMappings = (routePrefix: string): TRouteMapping[] => {
     return [
         { method: "get", eventName: "updateAuthorizeMap", route: `${routePrefix}/updateAuthorizeMap` },
     ];
