@@ -3,7 +3,7 @@ import { Server } from "http";
 import { Logger, LoggerOptions } from "pino";
 import { Socket } from "socket.io";
 
-import { ApiCall } from "@framework/helpers/communication/socket";
+import { ApiCall } from "@framework/core/communication/socket";
 import { addPacketId, shutdown } from "@framework/helpers/communication/socket/middleware";
 import { reannounce } from "@framework/helpers/service";
 

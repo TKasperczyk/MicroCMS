@@ -1,13 +1,12 @@
 import { Logger, LoggerOptions } from "pino";
 import { Event } from "socket.io";
 
-import { IncomingParser } from "@framework/helpers/communication/IncomingParser";
+import { IncomingParser } from "@framework/core/communication/IncomingParser";
+import { extractPrePacketData } from "@framework/helpers/communication/socket/packetData";
 
 import { TCmsMessage, TCmsPreMessage, TSocketNextFunction } from "@framework/types/communication/socket";
 import { TSocketError } from "@framework/types/errors";
 import { TLooseObject } from "@framework/types/generic";
-
-import { extractTPrePacketData } from "./packetData";
 
 export class MessageParser extends IncomingParser {
     constructor(rl: Logger<LoggerOptions>, typeName: string, crudRequiredArgsEnabled = false) {
@@ -24,7 +23,7 @@ export class MessageParser extends IncomingParser {
     public middleware(packet: Event, next: TSocketNextFunction): void {
         let eventName: string, preMsg: TCmsPreMessage, msg: TCmsMessage;
         try {
-            ({ eventName, preMsg } = extractTPrePacketData(packet));
+            ({ eventName, preMsg } = extractPrePacketData(packet));
         } catch (error) {
             this.rl.error({ packet }, `Error while extracting data from an incoming packet: ${String(error)}`);
             return next(new TSocketError(String(error), ""));

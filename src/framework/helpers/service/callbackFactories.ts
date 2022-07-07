@@ -1,7 +1,7 @@
 import { Logger, LoggerOptions } from "pino";
 
+import { Authorizer } from "@framework/core/communication";
 import { Crud } from "@framework/database/mongo";
-import { Authorizer } from "@framework/helpers/communication";
 
 import { TApiResult, TAuthorizeMap } from "@framework/types/communication";
 import { TCmsMessage } from "@framework/types/communication/socket";

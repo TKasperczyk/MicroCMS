@@ -1,9 +1,9 @@
 import { Response } from "express";
 
+import { sendError } from "@framework/helpers/communication/express/sendError";
+
 import { TApiResult } from "@framework/types/communication";
 import { TCmsRequestResponse } from "@framework/types/communication/express";
-
-import { sendError } from "./sendError";
 
 export abstract class ApiCall <TReturn> {
     public async performStandard(res: Response, crudFunction: () => Promise<TApiResult<TReturn>>): Promise<TApiResult<TReturn>> {

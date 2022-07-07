@@ -1,11 +1,11 @@
 import { Logger, LoggerOptions } from "pino";
 import { Socket } from "socket.io";
 
+import { Authorizer } from "@framework/core/communication/Authorizer";
+
 import { TApiResult } from "@framework/types/communication";
 import { TCmsMessageResponse } from "@framework/types/communication/socket";
 import { TLooseObject } from "@framework/types/generic";
-
-import { Authorizer } from "../Authorizer";
 
 type AuthorizerType = InstanceType<typeof Authorizer>["authorizeOutput"];
 

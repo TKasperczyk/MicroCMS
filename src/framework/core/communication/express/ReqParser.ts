@@ -1,11 +1,10 @@
 import { NextFunction, Request, Response } from "express";
 
-import { IncomingParser } from "@framework/helpers/communication/IncomingParser";
+import { IncomingParser } from "@framework/core/communication/IncomingParser";
+import { sendError } from "@framework/helpers/communication/express/sendError";
 
 import { TCmsRequest } from "@framework/types/communication/express";
 import { TLooseObject } from "@framework/types/generic";
-
-import { sendError } from "./sendError";
 
 export abstract class ReqParser extends IncomingParser {
     private extractCrudMethodNameFromReq(req: Request): string {

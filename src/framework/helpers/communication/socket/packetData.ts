@@ -2,7 +2,7 @@ import { Event } from "socket.io";
 
 import { TCmsMessage, TCmsPreMessage, TPacketData, TPrePacketData } from "@framework/types/communication/socket";
 
-export const extractTPrePacketData = (packet: Event): TPrePacketData => {
+export const extractPrePacketData = (packet: Event): TPrePacketData => {
     return TPrePacketData.parse({
         eventName: packet[0],
         preMsg: TCmsPreMessage.parse(packet[1])

@@ -1,4 +1,4 @@
-import { Authorizer } from "@framework/helpers/communication";
+import { Authorizer } from "@framework/core/communication";
 import { wait } from "@framework/helpers/wait";
 
 import { TAuthorizeMap } from "@framework/types/communication";
