@@ -73,17 +73,16 @@ export class Authorizer<InputType> {
         if (isObject(inputObj)) {
             const groupEntry = this.authorizeMap.group[msg.user.group as string]?.forbiddenWriteFields;
             const userEntry = this.authorizeMap.group[msg.user.login as string]?.forbiddenWriteFields;
-            let groupUpdatePermitted = true, userUpdatePermitted = true;
-            if (groupEntry && !groupEntry.excludedOperations?.includes(eventName)) {
-                groupUpdatePermitted = this.checkInputObj(inputObj, groupEntry.fields || []);
-            }
-            if (userEntry && !userEntry.excludedOperations?.includes(eventName)) {
-                userUpdatePermitted = this.checkInputObj(inputObj, userEntry.fields || []);
-            }
-            return (groupUpdatePermitted && userUpdatePermitted);
+            return this.entityCanUpdateFields(inputObj, groupEntry, eventName) && this.entityCanUpdateFields(inputObj, userEntry, eventName);
         } else {
             return true;
         }
+    }
+    private entityCanUpdateFields(inputObj: InputType, forbiddenWriteFields: { fields: string[], excludedOperations: string[] }, eventName: string ): boolean {
+        if (forbiddenWriteFields && !forbiddenWriteFields.excludedOperations?.includes(eventName)) {
+            return this.checkInputObj(inputObj, forbiddenWriteFields.fields || []);
+        }
+        return true;
     }
     private canPerformOperation(msg: TCmsMessage, eventName: string): boolean {
         const groupOperationPermitted = this.authorizeOperation(eventName, this.authorizeMap.group[msg.user.group as string]?.forbiddenOperations || []);

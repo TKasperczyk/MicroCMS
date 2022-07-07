@@ -19,7 +19,7 @@
         }
     },
     "rules": {
-        "complexity": ["error", 10],
+        "complexity": ["error", 8],
         "indent": ["error", 4, {
             "SwitchCase": 1
         }],
