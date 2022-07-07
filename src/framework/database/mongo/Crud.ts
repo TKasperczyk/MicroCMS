@@ -2,10 +2,12 @@ import * as dotObj from "dot-object";
 import { ObjectId, Sort, FindCursor, WithId, Document } from "mongodb";
 import { z } from "zod";
 
+import { isGenericFactory } from "@framework/helpers/assertions";
+
 import { TApiResult } from "@framework/types/communication";
 import { TCrudOperations } from "@framework/types/database";
 import { TLooseObject } from "@framework/types/generic";
-import { TGenericFactory } from "@framework/types/service";
+import { TFactory, TGenericFactory, TRequiredDefaults } from "@framework/types/service";
 
 import { Mongo } from "./Mongo";
 
@@ -22,13 +24,14 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
      */
     constructor(
         database: string, collection: string,
-        validator: z.ZodTypeAny, factory: TGenericFactory<TReturn>, requiredDefaults: 
+        validator: z.ZodType<TReturn>, factory: TGenericFactory<TReturn> | TFactory<TReturn>, requiredDefaults: TRequiredDefaults,
         indexes: string[], uniqueIndexes: string[], autoIncrementField: null | string = null
     ) {
         this.mongo = new Mongo(database);
         this.collection = collection;
         this.validator = validator;
         this.factory = factory;
+        this.requiredDefaults = requiredDefaults;
         this.indexes = indexes;
         this.uniqueIndexes = uniqueIndexes;
         this.autoIncrementField = autoIncrementField;
@@ -36,8 +39,9 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
 
     private mongo: Mongo;
     private collection: string;
-    private validator: z.ZodTypeAny;
-    private factory: TGenericFactory<TReturn>;
+    private validator: z.ZodType<TReturn>;
+    private factory: TGenericFactory<TReturn> | TFactory<TReturn>;
+    private requiredDefaults: TRequiredDefaults;
     private indexes: string[];
     private uniqueIndexes: string[];
     private autoIncrementField: null | string;
@@ -79,7 +83,7 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
             try {
                 const result: TReturn[] = [];
                 await cursor.forEach((document) => {
-                    const parsedDocument: TReturn = this.validator.parse(document) as TReturn;
+                    const parsedDocument: TReturn = this.validator.parse(document);
                     result.push(parsedDocument);
                 });
                 return result;
@@ -138,9 +142,9 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
      */
     public async add(documentToAdd: TReturn): Promise<TReturn> {
         try {
-            let documentFromTFactory = documentToAdd;
+            let documentFromTFactory;
             try {
-                documentFromTFactory = this.factory(documentToAdd, this.validator, );
+                documentFromTFactory = this.getDocumentFromFactory(documentToAdd);
             } catch (error) {
                 throw new Error(`Error while parsing the incoming object: ${String(error)} - ${JSON.stringify(documentToAdd)}`);
             }
@@ -150,7 +154,7 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
             const connection = await this.mongo.getConnection();
             const insertResult = await connection.collection(this.collection).insertOne(documentFromTFactory);
             try {
-                const result: TReturn = this.validator.parse({ ...documentFromTFactory, _id: insertResult.insertedId }) as TReturn;
+                const result: TReturn = this.validator.parse({ ...documentFromTFactory, _id: insertResult.insertedId });
                 return result;
             } catch (error) {
                 throw new Error(`Error while conforming a query result to the provided type: ${String(error)} - ${JSON.stringify(documentToAdd)}`);
@@ -170,7 +174,7 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
         try {
             const connection = await this.mongo.getConnection();
             const mongoId = new ObjectId(id);
-            const documentFromTFactory = this.factory(documentToUpdate, true);
+            const documentFromTFactory = this.getDocumentFromFactory(documentToUpdate, true);
             try {
                 this.validator.parse(documentFromTFactory);
             } catch (error) {
@@ -184,7 +188,7 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
                 throw new Error(`Error while updating an object: the provided id doesn't exist ${id}`);
             }
             try {
-                const result: TReturn = this.validator.parse(value) as TReturn;
+                const result: TReturn = this.validator.parse(value);
                 return result;
             } catch (error) {
                 throw new Error(`Error while conforming a query result to the provided type: ${String(error)} - ${JSON.stringify(value)}`);
@@ -216,6 +220,15 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
     }
 
     /**
+     * Proxy function to call the factory with appropriate parameters
+     * @param input The input object
+     * @param includeRequired The required defaults factory parameter
+     * @returns An object generated by the factory
+     */
+    private getDocumentFromFactory(input: TReturn, includeRequired = false): TReturn {
+        return isGenericFactory<TReturn>(this.factory) ? this.factory(input, this.validator, this.requiredDefaults, includeRequired) : this.factory(input, includeRequired);
+    }
+    /**
      * Returns every document stored in the collection, parses each of them
      * @returns an array of documents
      * @throws when there's a mongo execution error, when at least one of the retrieved documents can't be parsed by the validator
@@ -229,7 +242,7 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
             }
             try {
                 const result: TReturn[] = documents.map((document) => {
-                    return this.validator.parse(document) as TReturn;
+                    return this.validator.parse(document);
                 });
                 return result;
             } catch (error) {
@@ -254,7 +267,7 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
                 return null;
             }
             try {
-                const result: TReturn = this.validator.parse(document) as TReturn;
+                const result: TReturn = this.validator.parse(document);
                 return result;
             } catch (error) {
                 throw new Error(`Error while conforming a query result to the provided type: ${String(error)}`);

@@ -10,13 +10,13 @@ import { TLooseObject } from "@framework/types/generic";
 (dotObj.keepArray as boolean) = true; //eslint-disable-line
 
 export abstract class IncomingParser {
-    constructor(serviceName: string, crudRequiredArgsEnabled = false) {
+    constructor(serviceId: string, crudRequiredArgsEnabled = false) {
         this.crudRouteArgs = {
             search: [{ reqPartName: "parsedQuery", requiredArgList: ["query"] }],
             aggregate: [{ reqPartName: "parsedQuery", requiredArgList: ["pipeline"] }],
             get: [{ reqPartName: "parsedParams", requiredArgList: [] }],
-            add: [{ reqPartName: "parsedBody", requiredArgList: [serviceName] }],
-            update: [{ reqPartName: "parsedParams", requiredArgList: ["id"] }, { reqPartName: "parsedBody", requiredArgList: [serviceName] }],
+            add: [{ reqPartName: "parsedBody", requiredArgList: [serviceId] }],
+            update: [{ reqPartName: "parsedParams", requiredArgList: ["id"] }, { reqPartName: "parsedBody", requiredArgList: [serviceId] }],
             delete: [{ reqPartName: "parsedParams", requiredArgList: ["id"] }],
         };
         this.crudRequiredArgsEnabled = crudRequiredArgsEnabled;

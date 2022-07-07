@@ -8,14 +8,14 @@ import { createServiceAuthorizeMap } from "./factory";
 import { getServiceAuthorizeMapRouteMappings } from "./routes";
 import { TServiceAuthorizeMap } from "./type";
 
-const serviceName = "core.serviceAuthorizeMap";
+const serviceId = "core.serviceAuthorizeMap";
 const servicePath = "/core/serviceAuthorizeMap";
 
-const ml = appLogger(serviceName);
-const rl = reqLogger(serviceName);
+const ml = appLogger(serviceId);
+const rl = reqLogger(serviceId);
 
 const serviceAuthorizeMapRouteMappings = getServiceAuthorizeMapRouteMappings(servicePath);
-const serviceAuthorizeMapCrud = new Crud("test", serviceName, TServiceAuthorizeMap, createServiceAuthorizeMap, [], ["serviceName"]);
+const serviceAuthorizeMapCrud = new Crud<TServiceAuthorizeMap>("test", serviceId, TServiceAuthorizeMap, createServiceAuthorizeMap, {}, [], ["serviceId"]);
 const { io, httpServer } = getIoServer();
 
 (async () => {
@@ -28,14 +28,14 @@ const { io, httpServer } = getIoServer();
         process.exit();
     }
     const serviceAuthorizeMapOutputAuthorizer = serviceAuthorizeMapAuthorizer.authorizeOutput.bind(serviceAuthorizeMapAuthorizer);
-    const serviceAuthorizeMapAnnounce = announce.bind(null, servicePath, serviceAuthorizeMapRouteMappings, ml);
+    const serviceAuthorizeMapAnnounce = announce.bind(null, servicePath, serviceAuthorizeMapRouteMappings);
 
     io.on("connection", (socket) => {
         ml.info("The socket is connected with the main server");
         
-        const callbackFactories = getCrudCallbackFactories<TServiceAuthorizeMap>(serviceAuthorizeMapCrud, serviceName);
+        const callbackFactories = getCrudCallbackFactories<TServiceAuthorizeMap>(serviceAuthorizeMapCrud, serviceId);
         const serviceAuthorizeMapApiCall = new ApiCall<TServiceAuthorizeMap>(socket, serviceAuthorizeMapOutputAuthorizer, rl);
-        const messageParser = new MessageParser(rl, serviceName, true);
+        const messageParser = new MessageParser(rl, serviceId, true);
 
         applyBoilerplate<TServiceAuthorizeMap>(
             ml, rl, socket, 
@@ -55,6 +55,6 @@ const { io, httpServer } = getIoServer();
         process.exit();
     }
 })().then().catch((error) => {
-    console.error(`Error while initializing the ${serviceName} service ${String(error)}`);
+    console.error(`Error while initializing the ${serviceId} service ${String(error)}`);
     process.exit();
 });

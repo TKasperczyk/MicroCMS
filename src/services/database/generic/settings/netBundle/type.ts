@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 import { z } from "zod";
 
 import { TServiceType } from "@framework/types/enums";
+import { TRequiredDefaults } from "@framework/types/service";
 
 export const TNetBundle = z.object({
     _id: z.instanceof(ObjectId).optional(),
@@ -19,6 +20,6 @@ export const TNetBundle = z.object({
 }).strict();
 export type TNetBundle = z.input<typeof TNetBundle>;
 
-export const requiredDefaults: { [key: string]: unknown } = {
+export const netBundleRequiredDefaults: TRequiredDefaults = {
     "name": ""
 };

@@ -9,8 +9,8 @@
     "buildClean": "rm -rf ./dist/* && tsc && tsc-alias",
     "checkCircular": "madge --circular --extensions js ./dist",
     "prestart": "npm run build",
-    "start": "node .",
-    "test": "TODO"
+    "start": "node dist/master | pino-pretty -c -t",
+    "reqLog": "cat logs/requests/current.json | jq -s 'sort_by(.time) | .[]' -c | pino-pretty -c -t 'SYS:standard'"
   },
   "author": "Tomasz Kasperczyk",
   "license": "ISC",

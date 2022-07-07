@@ -16,14 +16,14 @@ import { TLooseObject } from "@framework/types/generic";
 (dotObj.keepArray as boolean) = true; //eslint-disable-line
 
 export class Authorizer<InputType> {
-    constructor(authorizeMap: TAuthorizeMap, serviceName: string) {
+    constructor(authorizeMap: TAuthorizeMap, serviceId: string) {
         this.authorizeMap = TAuthorizeMap.parse(authorizeMap);
-        this.serviceName = serviceName;
+        this.serviceId = serviceId;
     }
 
     public authorizeMap: TAuthorizeMapOutput;
     
-    private serviceName: string;
+    private serviceId: string;
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
     protected customInputLogic(input: InputType): boolean { return true; }
@@ -69,7 +69,7 @@ export class Authorizer<InputType> {
         next();
     }
     private canUpdateFields(msg: TCmsMessage, eventName: string): boolean {
-        const inputObj = msg?.parsedBody[this.serviceName] as InputType;
+        const inputObj = msg?.parsedBody[this.serviceId] as InputType;
         if (isObject(inputObj)) {
             const groupEntry = this.authorizeMap.group[msg.user.group as string]?.forbiddenWriteFields;
             const userEntry = this.authorizeMap.group[msg.user.login as string]?.forbiddenWriteFields;

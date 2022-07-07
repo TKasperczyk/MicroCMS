@@ -2,13 +2,13 @@ import * as dotObj from "dot-object";
 import { z } from "zod";
 
 import { TLooseObject } from "@framework/types/generic";
-import { TGenericFactory } from "@framework/types/service";
+import { TGenericFactory, TRequiredDefaults } from "@framework/types/service";
 
 export const createGenericServiceFactory = 
     <TGenericService>(): TGenericFactory<TGenericService> => <TGenericServiceSchema extends z.ZodType<TGenericService>>(
         genericService: TGenericService, 
         genericServiceValidator: TGenericServiceSchema,
-        requiredDefaults: Record<string, unknown> = {}, 
+        requiredDefaults: TRequiredDefaults = {}, 
         includeRequired = false
     ): TGenericService => {
         if (includeRequired) {

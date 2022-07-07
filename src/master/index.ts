@@ -1,37 +1,26 @@
-import * as fs from "node:fs";
 import * as path from "node:path";
 import * as workers from "node:worker_threads";
 
-interface AsyncIterable<T> {
-    [Symbol.asyncIterator](): AsyncIterator<T>;
-}
+import { getFilesRecursive } from "@framework/helpers/fileSystem";
 
-async function* getFilesRecursive(dir: string): AsyncIterable<string> {
-    const dirents = await fs.promises.readdir(dir, {
-        withFileTypes: true
-    });
-    for (const dirent of dirents) {
-        const res = path.resolve(dir, dirent.name);
-        if (dirent.isDirectory()) {
-            yield* getFilesRecursive(res);
-        } else {
-            yield res;
+const getServicePaths = async (dir: string): Promise<string[]> => {
+    const pathsForGroup: string[] = [];
+    for await (const filePath of getFilesRecursive(dir)) {
+        if (/index.js$/.test(filePath)) {
+            pathsForGroup.push(filePath);
         }
     }
-}
+    return pathsForGroup;
+};
 
 (async () => {
-    const pathsToFork: string[] = [path.resolve("dist/server/index.js")];
-    for await (const filePath of getFilesRecursive("dist/services")) {
-        if (/index.js$/.test(filePath)) {
-            pathsToFork.push(filePath);
-        }
-    }
+    let pathsToFork: string[] = [path.resolve("dist/server/index.js")];
+    pathsToFork = pathsToFork.concat(await getServicePaths("dist/services/database/core"));
+    pathsToFork = pathsToFork.concat(await getServicePaths("dist/services/database/generic"));
 
     pathsToFork.forEach((pathToFork) => {
         new workers.Worker(pathToFork);
     });
-    console.log(pathsToFork);
 })().then().catch((error) => {
     console.error(`Error while initializing the master controller ${String(error)}`);
     process.exit();

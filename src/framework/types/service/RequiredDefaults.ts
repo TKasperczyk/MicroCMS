@@ -1,0 +1,1 @@
+export type TRequiredDefaults = Record<string, unknown>;
