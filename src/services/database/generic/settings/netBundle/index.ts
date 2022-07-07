@@ -2,13 +2,13 @@ import { runGenericService } from "@framework/service/generic";
 
 import { TNetBundle, netBundleRequiredDefaults } from "./type";
 
-runGenericService<TNetBundle>(
-    "settings.netBundle",
-    "/settings/netBundle",
-    TNetBundle,
-    netBundleRequiredDefaults,
-    [],
-    ["name"]
-).then().catch((error) => {
+runGenericService<TNetBundle>({
+    serviceId: "settings.netBundle",
+    servicePath: "/settings/netBundle",
+    serviceValidator: TNetBundle,
+    serviceRequiredDefaults: netBundleRequiredDefaults,
+    serviceIndexes: [],
+    serviceUniqueIndexes: ["name"]
+}).then().catch((error) => {
     console.error(error);
 });

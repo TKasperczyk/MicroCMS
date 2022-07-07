@@ -12,12 +12,15 @@ import { createGenericServiceFactory } from "./factory";
 import { getGenericServiceRouteMappings } from "./routes";
 
 export const runGenericService = async <TGenericService>(
-    serviceId: string, 
-    servicePath: string, 
-    serviceValidator: z.ZodType<TGenericService>, 
-    serviceRequiredDefaults: TRequiredDefaults,
-    serviceIndexes: string[] = [],
-    serviceUniqueIndexes: string[] = []
+    { serviceId, servicePath, serviceValidator, serviceRequiredDefaults, serviceIndexes = [], serviceUniqueIndexes = [] }: 
+    {
+        serviceId: string, 
+        servicePath: string, 
+        serviceValidator: z.ZodType<TGenericService>, 
+        serviceRequiredDefaults: TRequiredDefaults,
+        serviceIndexes: string[],
+        serviceUniqueIndexes: string[]
+    }
 ) => {    
     const ml = appLogger(serviceId);
     const rl = reqLogger(serviceId);
