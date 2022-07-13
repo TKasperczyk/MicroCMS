@@ -2,14 +2,14 @@ import { Authorizer } from "@framework/core/communication";
 
 import { TAuthorizeMap } from "@framework/types/communication";
 
-import { TServiceAuthorizeMap } from "./type";
+import { TCore_ServiceAuthorizeMap } from "./type";
 
-const serviceAuthorizeMapAuthorizeMap: TAuthorizeMap = {};
+const core_serviceAuthorizeMapAuthorizeMap: TAuthorizeMap = {};
 
-export class ServiceAuthorizeMapAuthorizer extends Authorizer<TServiceAuthorizeMap> { }
+export class Core_ServiceAuthorizeMapAuthorizer extends Authorizer<TCore_ServiceAuthorizeMap> { }
 
-export const getServiceAuthorizeMapAuthorizer = (): Promise<ServiceAuthorizeMapAuthorizer> => {
+export const getCore_serviceAuthorizeMapAuthorizer = (): Promise<Core_ServiceAuthorizeMapAuthorizer> => {
     return new Promise((resolve) => {
-        resolve(new ServiceAuthorizeMapAuthorizer(serviceAuthorizeMapAuthorizeMap, "serviceAuthorizeMap"));
+        resolve(new Core_ServiceAuthorizeMapAuthorizer(core_serviceAuthorizeMapAuthorizeMap, "serviceAuthorizeMap"));
     });
 };

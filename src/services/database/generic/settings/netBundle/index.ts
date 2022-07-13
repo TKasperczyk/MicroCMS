@@ -1,12 +1,13 @@
 import { runGenericService } from "@framework/service/generic";
 
-import { TNetBundle, netBundleRequiredDefaults } from "./type";
+import { TSettings_NetBundle, settings_netBundleRequiredDefaults, settings_netBundleUpdateSpecs } from "./type";
 
-runGenericService<TNetBundle>({
+runGenericService<TSettings_NetBundle>({
     serviceId: "settings.netBundle",
     servicePath: "/settings/netBundle",
-    serviceValidator: TNetBundle,
-    serviceRequiredDefaults: netBundleRequiredDefaults,
+    serviceValidator: TSettings_NetBundle,
+    serviceRequiredDefaults: settings_netBundleRequiredDefaults,
+    serviceUpdateSpecs: settings_netBundleUpdateSpecs,
     serviceIndexes: [],
     serviceUniqueIndexes: ["name"]
 }).then().catch((error) => {

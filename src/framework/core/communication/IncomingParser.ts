@@ -2,6 +2,7 @@ import * as dotObj from "dot-object";
 import { ObjectId } from "mongodb";
 
 import { isObject } from "@framework/helpers/assertions";
+import { getErrorMessage } from "@framework/helpers/getErrorMessage";
 import { optionalDeepParse } from "@framework/helpers/optionalDeepParse";
 
 import { TCrudRouteArgs } from "@framework/types/communication";
@@ -39,7 +40,7 @@ export abstract class IncomingParser {
                 try {
                     toFilter[key] = new ObjectId(toFilter[key] as string);
                 } catch (error) {
-                    const errorMessage = `Error while parsing the _id parameter in the incoming object: ${String(error)} - ${toFilter[key] as string}`;
+                    const errorMessage = `Error while parsing the _id parameter in the incoming object: ${getErrorMessage(error)} - ${toFilter[key] as string}`;
                     this.lastError = errorMessage;
                     throw new Error(errorMessage);
                 }

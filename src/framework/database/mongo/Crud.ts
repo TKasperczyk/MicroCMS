@@ -1,31 +1,40 @@
+import { randomUUID } from "crypto";
+
 import * as dotObj from "dot-object";
 import { ObjectId, Sort, FindCursor, WithId, Document } from "mongodb";
+import { Logger, LoggerOptions } from "pino";
 import { z } from "zod";
 
+import { getErrorMessage } from "@framework/helpers";
 import { isGenericFactory } from "@framework/helpers/assertions";
+import { perfLogger } from "@framework/logger";
 
 import { TApiResult } from "@framework/types/communication";
 import { TCrudOperations } from "@framework/types/database";
 import { TLooseObject } from "@framework/types/generic";
 import { TFactory, TGenericFactory, TRequiredDefaults } from "@framework/types/service";
+import { TUpdateSpec } from "@framework/types/service/UpdateSpec";
 
 import { Mongo } from "./Mongo";
 
-export class Crud<TReturn> implements TCrudOperations<unknown> {
+export class Crud<TReturn extends { _id?: ObjectId }> implements TCrudOperations<unknown> {
     /**
      * 
      * @param database - the name of the database
      * @param collection - the name of the collection
      * @param validator - the ZOD type that allows to parse objects
      * @param factory - the function that produces a new TReturn with default values
+     * @param requiredDefaults - the list of dotted required fields with their default values
+     * @param updateSpecs - a list of specifications of the associated objects that should be updated along with this one
      * @param indexes - a list of fields that should be indexed
      * @param uniqueIndexes - a list of fields that should be unique
      * @param autoIncrementField - a list of fields that should be auto-incremented
      */
     constructor(
         database: string, collection: string,
-        validator: z.ZodType<TReturn>, factory: TGenericFactory<TReturn> | TFactory<TReturn>, requiredDefaults: TRequiredDefaults,
-        indexes: string[], uniqueIndexes: string[], autoIncrementField: null | string = null
+        validator: z.ZodType<TReturn>, factory: TGenericFactory<TReturn> | TFactory<TReturn>, 
+        requiredDefaults: TRequiredDefaults = {}, updateSpecs: TUpdateSpec[] = [],
+        indexes: string[] = [], uniqueIndexes: string[] = [], autoIncrementField: null | string = null,
     ) {
         this.mongo = new Mongo(database);
         this.collection = collection;
@@ -35,6 +44,9 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
         this.indexes = indexes;
         this.uniqueIndexes = uniqueIndexes;
         this.autoIncrementField = autoIncrementField;
+        this.updateSpecs = updateSpecs;
+
+        this.pf = perfLogger(`Crud[${collection}]`);
     }
 
     private mongo: Mongo;
@@ -45,6 +57,8 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
     private indexes: string[];
     private uniqueIndexes: string[];
     private autoIncrementField: null | string;
+    private updateSpecs: TUpdateSpec[];
+    private pf: Logger<LoggerOptions>;
 
     /**
      * Must be called before using any other methods. Creates the connection and indexes
@@ -72,6 +86,8 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
      */
     public async search({ query, sort = {}, page = 0, pageSize = 0, limit = 0 }: { query: TLooseObject, sort?: Sort, page?: number, pageSize?: number, limit?: number }): Promise<TReturn[]> {
         try {
+            const uuid = randomUUID();
+            this.pf.trace({ uuid, query, sort, page, pageSize, limit }, "Search began");
             if (pageSize > 0 && limit > 0) {
                 throw new Error("Paging and limiting are mutually exclusive in the Mongo search function");
             }
@@ -86,12 +102,13 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
                     const parsedDocument: TReturn = this.validator.parse(document);
                     result.push(parsedDocument);
                 });
+                this.pf.trace({ uuid }, "Search finished");
                 return result;
             } catch (error) {
-                throw new Error(`Error while conforming a query result to the provided type: ${String(error)} - ${JSON.stringify(query)}`);
+                throw new Error(`Error while conforming a query result to the provided type: ${getErrorMessage(error)} - ${JSON.stringify(query)}`);
             }
         } catch (error) {
-            throw new Error(`Error while executing a search query: ${String(error)} - ${JSON.stringify(query)}`);
+            throw new Error(`Error while executing a search query: ${getErrorMessage(error)} - ${JSON.stringify(query)}`);
         }
     }
     /**
@@ -102,6 +119,8 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
      */
     public async aggregate(pipeline: TLooseObject[]): Promise<TReturn[]> {
         try {
+            const uuid = randomUUID();
+            this.pf.trace({ uuid, pipeline }, "Aggregate began");
             const connection = await this.mongo.getConnection();
             const cursor = connection.collection(this.collection).aggregate(pipeline);
 
@@ -110,9 +129,10 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
                 // This is wrong - the doc isn't a TReturn, but changing that to TLooseObject would break other classes like ApiCall
                 result.push(document as TReturn);
             });
+            this.pf.trace({ uuid }, "Aggregate finished");
             return result;
         } catch (error) {
-            throw new Error(`Error while executing an aggregate query: ${String(error)} - ${JSON.stringify(pipeline)}`);
+            throw new Error(`Error while executing an aggregate query: ${getErrorMessage(error)} - ${JSON.stringify(pipeline)}`);
         }
     }
     /**
@@ -123,15 +143,18 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
      */
     public async get(id = ""): Promise<TApiResult<TReturn> | null> {
         try {
+            const uuid = randomUUID();
+            this.pf.trace({ uuid, id }, "Get began");
+            let result: TApiResult<TReturn>;
             if (id) {
-                const result = await this.getSingleDocument(id);
-                return result;
+                result = await this.getSingleDocument(id);
             } else {
-                const result = await this.getAllDocuments();
-                return result;
+                result = await this.getAllDocuments();
             }
+            this.pf.trace({ uuid }, "Get finished");
+            return result;
         } catch (error) {
-            throw new Error(`Error while executing a get query: ${String(error)} - ${id.toString()}`);
+            throw new Error(`Error while executing a get query: ${getErrorMessage(error)} - ${id.toString()}`);
         }
     }
     /**
@@ -142,25 +165,28 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
      */
     public async add(documentToAdd: TReturn): Promise<TReturn> {
         try {
-            let documentFromTFactory;
+            const uuid = randomUUID();
+            this.pf.trace({ uuid }, "Add began");
+            let documentFromFactory;
             try {
-                documentFromTFactory = this.getDocumentFromFactory(documentToAdd);
+                documentFromFactory = this.getDocumentFromFactory(documentToAdd);
             } catch (error) {
-                throw new Error(`Error while parsing the incoming object: ${String(error)} - ${JSON.stringify(documentToAdd)}`);
+                throw new Error(`Error while parsing the incoming object: ${getErrorMessage(error)} - ${JSON.stringify(documentToAdd)}`);
             }
 
-            documentFromTFactory = await this.handleAutoincrement(documentFromTFactory);
+            documentFromFactory = await this.handleAutoincrement(documentFromFactory);
 
             const connection = await this.mongo.getConnection();
-            const insertResult = await connection.collection(this.collection).insertOne(documentFromTFactory);
+            const insertResult = await connection.collection(this.collection).insertOne(documentFromFactory);
             try {
-                const result: TReturn = this.validator.parse({ ...documentFromTFactory, _id: insertResult.insertedId });
+                const result: TReturn = this.validator.parse({ ...documentFromFactory, _id: insertResult.insertedId });
+                this.pf.trace({ uuid }, "Add finished");
                 return result;
             } catch (error) {
-                throw new Error(`Error while conforming a query result to the provided type: ${String(error)} - ${JSON.stringify(documentToAdd)}`);
+                throw new Error(`Error while conforming a query result to the provided type: ${getErrorMessage(error)} - ${JSON.stringify(documentToAdd)}`);
             }
         } catch (error) {
-            throw new Error(`Error while executing an add query: ${String(error)} - ${JSON.stringify(documentToAdd)}`);
+            throw new Error(`Error while executing an add query: ${getErrorMessage(error)} - ${JSON.stringify(documentToAdd)}`);
         }
     }
     /**
@@ -172,29 +198,44 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
      */
     public async update(id: string, documentToUpdate: TReturn): Promise<TReturn> {
         try {
+            const uuid = randomUUID();
+            this.pf.trace({ uuid, id }, "Update began");
             const connection = await this.mongo.getConnection();
             const mongoId = new ObjectId(id);
-            const documentFromTFactory = this.getDocumentFromFactory(documentToUpdate, true);
+            const documentFromFactory = this.getDocumentFromFactory(
+                this.removeCoreFields(documentToUpdate), 
+                true
+            );
             try {
-                this.validator.parse(documentFromTFactory);
+                this.validator.parse(documentFromFactory);
             } catch (error) {
-                throw new Error(`Error while parsing the incoming object: ${String(error)} - ${JSON.stringify(documentToUpdate)}`);
+                throw new Error(`Error while parsing the incoming object: ${getErrorMessage(error)} - ${JSON.stringify(documentToUpdate)}`);
             }
             
-            const dDocumentToUpdate = this.updateDocumentObjWithDefaultsDot(documentFromTFactory, documentToUpdate);
+            const dDocumentToUpdate = this.updateDocumentObjWithDefaultsDot(documentFromFactory, documentToUpdate);
 
             const { value } = await connection.collection(this.collection).findOneAndUpdate({ _id: mongoId }, { $set: dotObj.object(dDocumentToUpdate) }, { upsert: false, returnDocument: "after" });
             if (value === null) {
                 throw new Error(`Error while updating an object: the provided id doesn't exist ${id}`);
             }
+            
+            let updatedResult: TReturn;
             try {
-                const result: TReturn = this.validator.parse(value);
-                return result;
+                updatedResult = this.validator.parse(value);
             } catch (error) {
-                throw new Error(`Error while conforming a query result to the provided type: ${String(error)} - ${JSON.stringify(value)}`);
+                throw new Error(`Error while conforming a query result to the provided type: ${getErrorMessage(error)} - ${JSON.stringify(value)}`);
             }
+
+            try {
+                await this.applyUpdateSpec(updatedResult, uuid);
+            } catch (error) {
+                throw new Error(`Failed to apply the update map: ${getErrorMessage(error)}`);
+            }
+
+            this.pf.trace({ uuid }, "Update finished");
+            return updatedResult;
         } catch (error) {
-            throw new Error(`Error while executing an update query: ${String(error)} - ${JSON.stringify(documentToUpdate)}`);
+            throw new Error(`Error while executing an update query: ${getErrorMessage(error)} - ${JSON.stringify(documentToUpdate)}`);
         }
     }
     /**
@@ -205,6 +246,8 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
      */
     public async delete(id: string): Promise<null> {
         try {
+            const uuid = randomUUID();
+            this.pf.trace({ uuid, id }, "Delete began");
             const connection = await this.mongo.getConnection();
             const mongoId = new ObjectId(id);
             const deletedDocument = await connection.collection(this.collection).deleteOne({ _id: mongoId });
@@ -213,12 +256,83 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
             } else if (deletedDocument?.deletedCount > 1) {
                 throw new Error(`Somehow deleted more than 1 document: ${id}`);
             }
+            this.pf.trace({ uuid }, "Delete finished");
             return null;
         } catch (error) {
-            throw new Error(`Error while executing a delete query: ${String(error)} - ${id}`);
+            throw new Error(`Error while executing a delete query: ${getErrorMessage(error)} - ${id}`);
         }
     }
 
+    /**
+     * Analyzes the update map and performs an update of each specified document based on the result of the update function
+     * @param updatedResult - the updated document
+     * @param uuid - the performance logger uuid
+     */
+    private async applyUpdateSpec(updatedResult: TReturn, uuid: string = randomUUID()): Promise<void> {
+        this.pf.trace({ uuid }, "applyUpdateSpec began");
+        const connection = await this.mongo.getConnection();
+        for (const updateSpec of this.updateSpecs) {
+            this.pf.trace({ uuid, updateSpec }, "applyUpdateSpec processing");
+            const documentsToUpdate = await connection.collection(updateSpec.toCollection)
+                .find({ [`${updateSpec.toField}.${updateSpec.idField}`]: String(dotObj.pick(updateSpec.idField, updatedResult)) })
+                .project({ [updateSpec.toField]: 1, _id: 1 })
+                .toArray();
+            this.pf.trace({ uuid }, `applyUpdateSpec processing found ${documentsToUpdate.length} documents to update`);
+            for (const documentToUpdate of documentsToUpdate) {
+                if (updateSpec.type === "array") {
+                    await this.handleUpdateSpecArrayType(updatedResult, documentToUpdate, updateSpec);
+                } else if (updateSpec.type === "object") {
+                    await this.handleUpdateSpecObjectType(updatedResult, documentToUpdate, updateSpec);
+                }
+            }
+        }
+        this.pf.trace({ uuid }, "applyUpdateSpec finished");
+    }
+    /**
+     * Handles the object update map case - replaces the existing object in the associated document's "toField" with updatedResult and updates it in the db
+     * @param updatedResult - the updated document
+     * @param documentToUpdate - the associated document that should be updated
+     * @param updateSpec - the map entry which should be used
+     */
+    private async handleUpdateSpecObjectType(updatedResult: TReturn, documentToUpdate: Document, updateSpec: TUpdateSpec): Promise<void> {
+        const connection = await this.mongo.getConnection();
+        const documentDestinationObject = dotObj.pick(updateSpec.toField, documentToUpdate) as TReturn;
+        if (typeof documentDestinationObject === "object") {
+            await connection.collection(updateSpec.toCollection).findOneAndUpdate(
+                { _id: new ObjectId(documentToUpdate._id as string) }, 
+                { $set: { [updateSpec.toField]: updatedResult } }, 
+                { upsert: false }
+            );
+        }
+    }
+    /**
+     * Handles the array update map case - finds the corresponding object in the associated document's "toField" array, replaces it with updatedResult and updates the document with the new array
+     * @param updatedResult - the updated document
+     * @param documentToUpdate - the associated document that should be updated
+     * @param updateSpec - the map entry which should be used
+     */
+    private async handleUpdateSpecArrayType(updatedResult: TReturn, documentToUpdate: Document, updateSpec: TUpdateSpec): Promise<void> {
+        const connection = await this.mongo.getConnection();
+        const documentDestinationArray = dotObj.pick(updateSpec.toField, documentToUpdate) as TReturn[];
+        if (Array.isArray(documentDestinationArray)) {
+            let didModify = false;
+            const updatedArray = documentDestinationArray.map((destEntry) => {
+                if (dotObj.pick(updateSpec.idField, destEntry) === dotObj.pick(updateSpec.idField, updatedResult)) {
+                    didModify = true;
+                    return updatedResult;
+                } else {
+                    return destEntry;
+                }
+            });
+            if (didModify) {
+                await connection.collection(updateSpec.toCollection).findOneAndUpdate(
+                    { _id: new ObjectId(documentToUpdate._id as string) }, 
+                    { $set: { [updateSpec.toField]: updatedArray } }, 
+                    { upsert: false }
+                );
+            }
+        }
+    }
     /**
      * Proxy function to call the factory with appropriate parameters
      * @param input The input object
@@ -246,10 +360,10 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
                 });
                 return result;
             } catch (error) {
-                throw new Error(`Error while conforming a query result to the provided type: ${String(error)}`);
+                throw new Error(`Error while conforming a query result to the provided type: ${getErrorMessage(error)}`);
             }
         } catch (error) {
-            throw new Error(`Error while executing a get all documents query: ${String(error)}`);
+            throw new Error(`Error while executing a get all documents query: ${getErrorMessage(error)}`);
         }
     }
     /**
@@ -270,10 +384,10 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
                 const result: TReturn = this.validator.parse(document);
                 return result;
             } catch (error) {
-                throw new Error(`Error while conforming a query result to the provided type: ${String(error)}`);
+                throw new Error(`Error while conforming a query result to the provided type: ${getErrorMessage(error)}`);
             }
         } catch (error) {
-            throw new Error(`Error while executing a get single document query: ${String(error)} - ${id.toString()}`);
+            throw new Error(`Error while executing a get single document query: ${getErrorMessage(error)} - ${id.toString()}`);
         }
     }
     /**
@@ -300,44 +414,53 @@ export class Crud<TReturn> implements TCrudOperations<unknown> {
             }
             return cursor;
         } catch (error) {
-            throw new Error(`Error while applying cursor options: ${String(error)}`);
+            throw new Error(`Error while applying cursor options: ${getErrorMessage(error)}`);
         }
     }
     /**
      * If the internal autoincrement array has fields that exist in the provided document, it will find the next biggest value of that field in the database, increment it by one and modify the provided document, then return it
-     * @param documentFromTFactory - a document generated by the factory (with default fields)
-     * @returns documentFromTFactory
+     * @param documentFromFactory - a document generated by the factory (with default fields)
+     * @returns documentFromFactory
      * @throws when the provided document doesn't have fields defined in the internal autoincrement array, when there's a mongo execution error
      */
-    private async handleAutoincrement(documentFromTFactory: TReturn): Promise<TReturn> {
+    private async handleAutoincrement(documentFromFactory: TReturn): Promise<TReturn> {
         try {
             const connection = await this.mongo.getConnection();
             if (this.autoIncrementField) {
                 const autoIncrementKey = this.autoIncrementField as keyof TReturn;
-                if (typeof documentFromTFactory[autoIncrementKey] !== "number") {
-                    throw new Error(`The factory didn't produce an object with a proper autoincrement field: ${this.autoIncrementField}: ${JSON.stringify(documentFromTFactory)}`);
+                if (typeof documentFromFactory[autoIncrementKey] !== "number") {
+                    throw new Error(`The factory didn't produce an object with a proper autoincrement field: ${this.autoIncrementField}: ${JSON.stringify(documentFromFactory)}`);
                 }
 
                 const latestIndex: TLooseObject[] = await connection.collection(this.collection).find().project({ [this.autoIncrementField]: 1 }).sort({ [this.autoIncrementField]: -1 }).limit(1).toArray();
                 if (latestIndex && latestIndex.length && typeof latestIndex[0][this.autoIncrementField] === "number") {
-                    (documentFromTFactory[autoIncrementKey] as unknown) = (latestIndex[0][this.autoIncrementField] as number) + 1;
+                    (documentFromFactory[autoIncrementKey] as unknown) = (latestIndex[0][this.autoIncrementField] as number) + 1;
                 } else {
-                    (documentFromTFactory[autoIncrementKey] as unknown) = 0;
+                    (documentFromFactory[autoIncrementKey] as unknown) = 0;
                 }
             }
-            return documentFromTFactory;
+            return documentFromFactory;
         } catch (error) {
-            throw new Error(`Error while handling autoincrement: ${String(error)} - ${JSON.stringify(documentFromTFactory)}`);
+            throw new Error(`Error while handling autoincrement: ${getErrorMessage(error)} - ${JSON.stringify(documentFromFactory)}`);
         }
     }
     /**
+     * Removes forbidden update / add fields from the provided document, like "_id"
+     * @param document - the document to modify
+     * @returns the provided document with removed forbidden fields
+     */
+    private removeCoreFields(document: TReturn): TReturn {
+        delete document._id;
+        return document;
+    }
+    /**
      * Adds fields with default values to the provided document based on the object generated by the factory, returns a dotted version of that document
-     * @param documentFromTFactory - a document generated by the factory (with default fields)
+     * @param documentFromFactory - a document generated by the factory (with default fields)
      * @param documentToUpdate - the document that should be updated with the default fields
      * @returns a dotted document object
      */
-    private updateDocumentObjWithDefaultsDot(documentFromTFactory: TReturn, documentToUpdate: TLooseObject): TLooseObject {
-        const dDocumentFromTFactory = dotObj.dot(documentFromTFactory) as TLooseObject;
+    private updateDocumentObjWithDefaultsDot(documentFromFactory: TReturn, documentToUpdate: TLooseObject): TLooseObject {
+        const dDocumentFromTFactory = dotObj.dot(documentFromFactory) as TLooseObject;
         const dDocumentToUpdate = dotObj.dot(documentToUpdate) as TLooseObject;
         for (const key of Object.keys(dDocumentToUpdate)) {
             dDocumentToUpdate[key] = dDocumentFromTFactory[key] as TLooseObject;

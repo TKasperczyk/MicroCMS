@@ -1,7 +1,7 @@
 import { TFactory } from "@framework/types/service";
 
-import { TServiceAuthorizeMap } from "./type";
+import { TCore_ServiceAuthorizeMap } from "./type";
 
-export const createServiceAuthorizeMap: TFactory<TServiceAuthorizeMap> = (serviceAuthorizeMap: TServiceAuthorizeMap): TServiceAuthorizeMap => {
-    return TServiceAuthorizeMap.parse(serviceAuthorizeMap);
+export const createCore_serviceAuthorizeMap: TFactory<TCore_ServiceAuthorizeMap> = (serviceAuthorizeMap: TCore_ServiceAuthorizeMap): TCore_ServiceAuthorizeMap => {
+    return TCore_ServiceAuthorizeMap.parse(serviceAuthorizeMap);
 };

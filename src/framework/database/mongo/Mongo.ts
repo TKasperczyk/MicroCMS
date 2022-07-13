@@ -1,5 +1,7 @@
 import { Db, MongoClient } from "mongodb";
 
+import { getErrorMessage } from "@framework/helpers";
+
 export class Mongo {
     constructor(database: string) {
         this.database = database;
@@ -25,7 +27,7 @@ export class Mongo {
             });
             return true;
         } catch (error) {
-            const errorMessage = `Error while initializing the Mongo connection: ${String(error)}`;
+            const errorMessage = `Error while initializing the Mongo connection: ${getErrorMessage(error)}`;
             this.lastError = errorMessage;
             throw new Error(errorMessage);
         }
@@ -35,7 +37,7 @@ export class Mongo {
             try {
                 await this.init();
             } catch (error) {
-                const errorMessage = `Error while initializing the Mongo connection to get the client: ${String(error)}}`;
+                const errorMessage = `Error while initializing the Mongo connection to get the client: ${getErrorMessage(error)}}`;
                 this.lastError = errorMessage;
                 throw new Error(errorMessage);
             }

@@ -4,29 +4,36 @@ import { appLogger, reqLogger } from "@framework";
 import { Authorizer } from "@framework/core/communication";
 import { MessageParser, ApiCall } from "@framework/core/communication/socket";
 import { Crud } from "@framework/database/mongo";
+import { getErrorMessage } from "@framework/helpers";
 import { getCrudCallbackFactories, getCoreCallbackFactories, getServiceAuthorizer, announce, reannounce, applyBoilerplate, getIoServer } from "@framework/helpers/service";
 
-import { TCallbackFactories, TRequiredDefaults } from "@framework/types/service";
+import { TCallbackFactories, TRequiredDefaults, TUpdateSpec } from "@framework/types/service";
 
 import { createGenericServiceFactory } from "./factory";
 import { getGenericServiceRouteMappings } from "./routes";
 
 export const runGenericService = async <TGenericService>(
-    { serviceId, servicePath, serviceValidator, serviceRequiredDefaults, serviceIndexes = [], serviceUniqueIndexes = [] }: 
+    { serviceId, servicePath, serviceValidator, serviceRequiredDefaults = {}, serviceUpdateSpecs = [], serviceIndexes = [], serviceUniqueIndexes = [] }: 
     {
         serviceId: string, 
         servicePath: string, 
         serviceValidator: z.ZodType<TGenericService>, 
         serviceRequiredDefaults: TRequiredDefaults,
+        serviceUpdateSpecs: TUpdateSpec[],
         serviceIndexes: string[],
         serviceUniqueIndexes: string[]
     }
-) => {    
+) => {
     const ml = appLogger(serviceId);
     const rl = reqLogger(serviceId);
 
     const genericServiceRouteMappings = getGenericServiceRouteMappings(servicePath);
-    const genericServiceCrud = new Crud<TGenericService>("test", serviceId, serviceValidator, createGenericServiceFactory<TGenericService>(), serviceRequiredDefaults, serviceIndexes, serviceUniqueIndexes);
+    const genericServiceCrud = new Crud<TGenericService>(
+        "test", serviceId, 
+        serviceValidator, createGenericServiceFactory<TGenericService>(), 
+        serviceRequiredDefaults, serviceUpdateSpecs, 
+        serviceIndexes, serviceUniqueIndexes
+    );
     const { io, httpServer } = getIoServer();
     
     let genericServiceAuthorizer: Authorizer<TGenericService>;
@@ -34,7 +41,7 @@ export const runGenericService = async <TGenericService>(
         await genericServiceCrud.init();
         genericServiceAuthorizer = await getServiceAuthorizer<TGenericService>(serviceId);
     } catch (error) {
-        ml.error(`Error while initializing the service: ${String(error)}`);
+        ml.error(`Error while initializing the service: ${getErrorMessage(error)}`);
         process.exit();
     }
     const genericServiceOutputAuthorizer = genericServiceAuthorizer.authorizeOutput.bind(genericServiceAuthorizer);
@@ -67,7 +74,7 @@ export const runGenericService = async <TGenericService>(
         httpServer.listen(serviceSetup.port, "127.0.0.1");
         ml.info(`Service ${serviceId} listening on port ${serviceSetup.port}`);
     } catch (error) {
-        ml.error(`Error while announcing the service or launching the HTTP server: ${String(error)}`);
+        ml.error(`Error while announcing the service or launching the HTTP server: ${getErrorMessage(error)}`);
         process.exit();
     }
 };

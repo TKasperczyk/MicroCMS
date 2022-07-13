@@ -36,6 +36,9 @@
             }, {
                 "group": "internal",
                 "pattern": "@framework**"
+            }, {
+                "group": "internal",
+                "pattern": "@service**"
             }],
             "alphabetize": {
                 "order": "asc",

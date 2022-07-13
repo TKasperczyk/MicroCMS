@@ -1,4 +1,5 @@
-import { isObject } from "@framework/helpers/assertions";
+import { isObject } from "@framework/helpers/assertions/isObject";
+import { getErrorMessage } from "@framework/helpers/getErrorMessage";
 
 import { TLooseObject } from "@framework/types/generic";
 
@@ -24,7 +25,7 @@ export const optionalDeepParse = (input: TLooseObject | string): TLooseObject =>
             }
         }
     } catch (error) {
-        const errorMessage = `Error while parsing an object: ${String(error)}`;
+        const errorMessage = `Error while parsing an object: ${getErrorMessage(error)}`;
         throw new Error(errorMessage);
     }
     return result;

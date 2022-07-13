@@ -1,4 +1,4 @@
-import { wait } from "@framework/helpers";
+import { wait } from "@framework/helpers/wait";
 
 import { TDiscoveryPack } from "@framework/types/communication/express";
 import { TRouteMapping } from "@framework/types/communication/socket";

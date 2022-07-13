@@ -1,5 +1,7 @@
 import { createConnection, Connection } from "mysql2/promise";
 
+import { getErrorMessage } from "@framework/helpers";
+
 import { TLooseObject } from "@framework/types/generic";
 
 export class Mysql {
@@ -27,7 +29,7 @@ export class Mysql {
             });
             return true;
         } catch (error) {
-            const errorMessage = `Error while initializing the SQL connection: ${String(error)}`;
+            const errorMessage = `Error while initializing the SQL connection: ${getErrorMessage(error)}`;
             this.lastError = errorMessage;
             throw new Error(errorMessage);
         }
@@ -37,7 +39,7 @@ export class Mysql {
             try {
                 await this.init();
             } catch (error) {
-                const errorMessage = `Error while initializing the SQL connection to execute the query: ${String(error)} - ${query}`;
+                const errorMessage = `Error while initializing the SQL connection to execute the query: ${getErrorMessage(error)} - ${query}`;
                 this.lastError = errorMessage;
                 throw new Error(errorMessage);
             }
@@ -48,7 +50,7 @@ export class Mysql {
         try {
             return await this.connection.execute(query, params);
         } catch (error) {
-            const errorMessage = `Error while executing the query: ${String(error)} - ${query}`;
+            const errorMessage = `Error while executing the query: ${getErrorMessage(error)} - ${query}`;
             this.lastError = errorMessage;
             throw new Error(errorMessage);
         }

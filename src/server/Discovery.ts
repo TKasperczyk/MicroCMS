@@ -4,6 +4,7 @@ import express, { Express, json } from "express";
 import { io, Socket } from "socket.io-client";
 
 import { appLogger } from "@framework";
+import { getErrorMessage } from "@framework/helpers";
 
 import { TDiscoveryPack } from "@framework/types/communication/express";
 import { TSocketPool, TSocketPoolEntry } from "@framework/types/communication/socket";
@@ -36,7 +37,7 @@ export class Discovery {
             try {
                 discoveryPack = TDiscoveryPack.parse(req.body);
             } catch (error) {
-                ml.error(`Failed to parse the discovery pack: ${String(error)}`);
+                ml.error(`Failed to parse the discovery pack: ${getErrorMessage(error)}`);
                 return;
             }
             
@@ -55,7 +56,7 @@ export class Discovery {
                 try {
                     this.registerService(socket, discoveryPack, servicePort);
                 } catch (error) {
-                    ml.error({ discoveryPack }, `Error while registering a service ${discoveryPack.serviceId}: ${String(error)}`);
+                    ml.error({ discoveryPack }, `Error while registering a service ${discoveryPack.serviceId}: ${getErrorMessage(error)}`);
                     this.shutdownService(socket);
                     this.turnOffSocket(socket);
                     return;
@@ -67,14 +68,14 @@ export class Discovery {
                 try {
                     this.unregisterService(discoveryPack.serviceId);
                 } catch (error) {
-                    ml.error(`Error while unregistering a service ${discoveryPack.serviceId}: ${String(error)}`);
+                    ml.error(`Error while unregistering a service ${discoveryPack.serviceId}: ${getErrorMessage(error)}`);
                 }
             });
         });
         this.httpServer.listen(this.port, "127.0.0.1");
         ml.info(`Listening on port ${this.port}`);
     }
-    public on(eventName: string, callback: (...args: any[]) => void): void { //eslint-disable-line @typescript-eslint/no-explicit-any
+    public on(eventName: string, callback: (...args: any[]) => any): void { //eslint-disable-line @typescript-eslint/no-explicit-any
         this.emitter.on(eventName, callback);
     }
     

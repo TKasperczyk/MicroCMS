@@ -2,9 +2,9 @@ import { ObjectId } from "mongodb";
 import { z } from "zod";
 
 import { TServiceType } from "@framework/types/enums";
-import { TRequiredDefaults } from "@framework/types/service";
+import { TRequiredDefaults, TUpdateSpec } from "@framework/types/service";
 
-export const TNetBundle = z.object({
+export const TSettings_NetBundle = z.object({
     _id: z.instanceof(ObjectId).optional(),
     name: z.string(),
     upMbps: z.number().default(0),
@@ -18,8 +18,10 @@ export const TNetBundle = z.object({
     tvBundleName: z.string().default(""),
     business: z.preprocess((val) => (typeof val === "boolean" || val === 0 || val === 1 ? Boolean(val) : val), z.boolean()).default(false)
 }).strict();
-export type TNetBundle = z.input<typeof TNetBundle>;
+export type TSettings_NetBundle = z.input<typeof TSettings_NetBundle>;
 
-export const netBundleRequiredDefaults: TRequiredDefaults = {
+export const settings_netBundleRequiredDefaults: TRequiredDefaults = {
     "name": ""
 };
+
+export const settings_netBundleUpdateSpecs: TUpdateSpec[] = [];

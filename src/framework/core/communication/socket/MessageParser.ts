@@ -2,7 +2,8 @@ import { Logger, LoggerOptions } from "pino";
 import { Event } from "socket.io";
 
 import { IncomingParser } from "@framework/core/communication/IncomingParser";
-import { extractPrePacketData } from "@framework/helpers/communication/socket/packetData";
+import { getErrorMessage } from "@framework/helpers";
+import { extractPrePacketData } from "@framework/helpers/communication/socket";
 
 import { TCmsMessage, TCmsPreMessage, TSocketNextFunction } from "@framework/types/communication/socket";
 import { TSocketError } from "@framework/types/errors";
@@ -25,14 +26,14 @@ export class MessageParser extends IncomingParser {
         try {
             ({ eventName, preMsg } = extractPrePacketData(packet));
         } catch (error) {
-            this.rl.error({ packet }, `Error while extracting data from an incoming packet: ${String(error)}`);
+            this.rl.error({ packet }, `Error while extracting data from an incoming packet: ${getErrorMessage(error)}`);
             return next(new TSocketError(String(error), ""));
         }
         this.rl.debug({ requestId: preMsg.requestId || null, preMsg }, `Parsing an incoming message for ${eventName}`); //eslint-disable-line @typescript-eslint/no-unsafe-assignment
         try {
             msg = this.parseMessage(preMsg, eventName);
         } catch (error) {
-            this.rl.error({ requestId: preMsg.requestId, preMsg }, `Error while parsing an incoming message for ${eventName}: ${String(error)}`);
+            this.rl.error({ requestId: preMsg.requestId, preMsg }, `Error while parsing an incoming message for ${eventName}: ${getErrorMessage(error)}`);
             this.postParse(preMsg, eventName, String(error));
             return next(new TSocketError(String(error), preMsg.requestId));
         }
@@ -57,7 +58,7 @@ export class MessageParser extends IncomingParser {
         try {
             return TCmsMessage.parse(msgToConstruct);
         } catch (error) {
-            this.rl.error({ preMsg, msgToConstruct },`Error while parsing an incoming TCmsMessage: ${String(error)}. Returning malformed`);
+            this.rl.error({ preMsg, msgToConstruct },`Error while parsing an incoming TCmsMessage: ${getErrorMessage(error)}. Returning malformed`);
             return msgToConstruct as TCmsMessage;
         }
     }

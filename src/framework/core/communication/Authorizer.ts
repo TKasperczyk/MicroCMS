@@ -3,6 +3,7 @@ import { Event } from "socket.io";
 
 import { isObject } from "@framework/helpers/assertions";
 import { extractPacketData } from "@framework/helpers/communication/socket/packetData";
+import { TData_User } from "@services/database/generic/data/user";
 
 import { TApiResult, TAuthorizeMap, TAuthorizeMapOutput } from "@framework/types/communication";
 import { TSocketNextFunction , TCmsMessage } from "@framework/types/communication/socket";
@@ -27,11 +28,11 @@ export class Authorizer<InputType> {
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
     protected customInputLogic(input: InputType): boolean { return true; }
-    protected customOutputLogic(response: TApiResult<InputType>, user: TLooseObject): TApiResult<InputType> | null { return response; }
+    protected customOutputLogic(response: TApiResult<InputType>, user: TData_User): TApiResult<InputType> | null { return response; }
     protected customOperationLogic(operation: string): boolean { return true; }
     /* eslint-enable @typescript-eslint/no-unused-vars */
 
-    public authorizeOutput(response: TApiResult<InputType>, user: TLooseObject): TApiResult<InputType> {
+    public authorizeOutput(response: TApiResult<InputType>, user: TData_User): TApiResult<InputType> {
         if (!user?.login || !user?.group) {
             throw new Error("Malformed or missing user object");
         }
@@ -41,8 +42,8 @@ export class Authorizer<InputType> {
 
         let result: TApiResult<InputType> = response;
 
-        const groupEntry = this.authorizeMap.group[user.group as string]?.hiddenReadFields;
-        const userEntry = this.authorizeMap.group[user.login as string]?.hiddenReadFields;
+        const groupEntry = this.authorizeMap.group[user.group]?.hiddenReadFields;
+        const userEntry = this.authorizeMap.user[user.login]?.hiddenReadFields;
         if (groupEntry) {
             result = this.hideFields(result, groupEntry);
         }
@@ -60,19 +61,19 @@ export class Authorizer<InputType> {
         }
 
         if (!this.canPerformOperation(msg, eventName)) {
-            return next(new TSocketError(`A user tried to perform a forbidden operation (${msg.user.login as string}): ${eventName}`, msg.requestId));
+            return next(new TSocketError(`A user tried to perform a forbidden operation (${msg.user.login }): ${eventName}`, msg.requestId));
         }
 
         if (!this.canUpdateFields(msg, eventName)) {
-            return next(new TSocketError(`A user (${msg.user.login as string}) tried to write to forbidden fields`, msg.requestId));
+            return next(new TSocketError(`A user (${msg.user.login }) tried to write to forbidden fields`, msg.requestId));
         }
         next();
     }
     private canUpdateFields(msg: TCmsMessage, eventName: string): boolean {
         const inputObj = msg?.parsedBody[this.serviceId] as InputType;
         if (isObject(inputObj)) {
-            const groupEntry = this.authorizeMap.group[msg.user.group as string]?.forbiddenWriteFields;
-            const userEntry = this.authorizeMap.group[msg.user.login as string]?.forbiddenWriteFields;
+            const groupEntry = this.authorizeMap.group[msg.user.group]?.forbiddenWriteFields;
+            const userEntry = this.authorizeMap.user[msg.user.login]?.forbiddenWriteFields;
             return this.entityCanUpdateFields(inputObj, groupEntry, eventName) && this.entityCanUpdateFields(inputObj, userEntry, eventName);
         } else {
             return true;
@@ -85,8 +86,8 @@ export class Authorizer<InputType> {
         return true;
     }
     private canPerformOperation(msg: TCmsMessage, eventName: string): boolean {
-        const groupOperationPermitted = this.authorizeOperation(eventName, this.authorizeMap.group[msg.user.group as string]?.forbiddenOperations || []);
-        const userOperationPermitted = this.authorizeOperation(eventName, this.authorizeMap.user[msg.user.login as string]?.forbiddenOperations || []);
+        const groupOperationPermitted = this.authorizeOperation(eventName, this.authorizeMap.group[msg.user.group ]?.forbiddenOperations || []);
+        const userOperationPermitted = this.authorizeOperation(eventName, this.authorizeMap.user[msg.user.login ]?.forbiddenOperations || []);
         return (groupOperationPermitted && userOperationPermitted);
     }
     private checkUserObj(msg: TCmsMessage): boolean {

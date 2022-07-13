@@ -5,3 +5,4 @@ export * as server from "./server";
 export * as service from "./service";
 export * from "./optionalDeepParse";
 export * from "./wait";
+export * from "./getErrorMessage";

@@ -2,10 +2,11 @@ import { Logger, LoggerOptions } from "pino";
 import { Socket } from "socket.io";
 
 import { Authorizer } from "@framework/core/communication/Authorizer";
+import { getErrorMessage } from "@framework/helpers";
+import { TData_User } from "@services/database/generic/data/user";
 
 import { TApiResult } from "@framework/types/communication";
 import { TCmsMessageResponse } from "@framework/types/communication/socket";
-import { TLooseObject } from "@framework/types/generic";
 
 type AuthorizerType = InstanceType<typeof Authorizer>["authorizeOutput"];
 
@@ -21,13 +22,13 @@ export class ApiCall <TReturn> {
     protected rl: Logger<LoggerOptions>;
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
-    protected prePerform(requestId: string, user: TLooseObject): void { return; }
-    protected postPerform(requestId: string, user: TLooseObject, result: TApiResult<TReturn> | null, error: Error | null): void { return; }
+    protected prePerform(requestId: string, user: TData_User): void { return; }
+    protected postPerform(requestId: string, user: TData_User, result: TApiResult<TReturn> | null, error: Error | null): void { return; }
     /* eslint-enable @typescript-eslint/no-unused-vars */
 
     //Resolves to null when it catches an error
     public async performStandard(
-        requestId: string, user: TLooseObject,
+        requestId: string, user: TData_User,
         apiFunction: () => Promise<TApiResult<TReturn>>
     ): Promise<TApiResult<TReturn> | null> {
         return new Promise((resolve) => {
@@ -47,7 +48,7 @@ export class ApiCall <TReturn> {
                     resolve(result);
                 })
                 .catch((error: Error) => {
-                    this.rl.error({ requestId, user }, `Failed to execute an API call: ${String(error)}`);
+                    this.rl.error({ requestId, user }, `Failed to execute an API call: ${getErrorMessage(error)}`);
                     this.postPerform(requestId, user, null, error);
                     this.socket.emit("response", {
                         status: false,

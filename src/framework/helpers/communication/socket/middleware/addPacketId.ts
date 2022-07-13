@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 
 import { Event } from "socket.io";
 
-import { isObject } from "@framework/helpers/assertions";
+import { isObject } from "@framework/helpers/assertions/isObject";
 
 import { TSocketNextFunction } from "@framework/types/communication/socket";
 

@@ -1,6 +1,7 @@
 import express, { Express, json } from "express";
 
 import { appLogger } from "@framework";
+import { getErrorMessage } from "@framework/helpers";
 import { messageResponseHandler } from "@framework/helpers/server";
 
 import { TSocketPoolEntry, TCmsMessageResponse } from "@framework/types/communication/socket";
@@ -16,14 +17,14 @@ try {
     routerManager = new RouterManager();
     app = express();
 } catch (error) {
-    ml.error(`Failed to create the core modules: ${String(error)}`);
+    ml.error(`Failed to create the core modules: ${getErrorMessage(error)}`);
     process.exit();
 }
 
 try {
     discovery.initServer();
 } catch (error) {
-    ml.error(`Failed to initialize Discovery ${String(error)}`);
+    ml.error(`Failed to initialize Discovery ${getErrorMessage(error)}`);
     process.exit();
 }
 
@@ -35,7 +36,7 @@ discovery.on("register", (socketPoolEntry: TSocketPoolEntry) => {
     try {
         routerManager.replace(discovery.sockets);
     } catch (error) {
-        ml.error(`Failed to replace the router for service: ${socketPoolEntry.serviceId}: ${String(error)}`);
+        ml.error(`Failed to replace the router for service: ${socketPoolEntry.serviceId}: ${getErrorMessage(error)}`);
         return;
     }
     ml.info(`Created new express routes for service: ${socketPoolEntry.serviceId}`);
@@ -53,7 +54,7 @@ discovery.on("unregister", (serviceId: string) => {
     try {
         routerManager.replace(discovery.sockets);
     } catch (error) {
-        ml.error(`Failed to replace the router for service: ${serviceId}: ${String(error)}`);
+        ml.error(`Failed to replace the router for service: ${serviceId}: ${getErrorMessage(error)}`);
         return;
     }
     ml.info(`Removed express routes for service: ${serviceId}`);

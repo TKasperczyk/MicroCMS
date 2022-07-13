@@ -1,6 +1,7 @@
 import * as path from "node:path";
 import * as workers from "node:worker_threads";
 
+import { getErrorMessage } from "@framework/helpers";
 import { getFilesRecursive } from "@framework/helpers/fileSystem";
 
 const getServicePaths = async (dir: string): Promise<string[]> => {
@@ -22,6 +23,6 @@ const getServicePaths = async (dir: string): Promise<string[]> => {
         new workers.Worker(pathToFork);
     });
 })().then().catch((error) => {
-    console.error(`Error while initializing the master controller ${String(error)}`);
+    console.error(`Error while initializing the master controller ${getErrorMessage(error)}`);
     process.exit();
 });

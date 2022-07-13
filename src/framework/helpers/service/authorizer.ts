@@ -1,4 +1,5 @@
 import { Authorizer } from "@framework/core/communication";
+import { getErrorMessage } from "@framework/helpers/getErrorMessage";
 import { wait } from "@framework/helpers/wait";
 
 import { TAuthorizeMap } from "@framework/types/communication";
@@ -18,7 +19,7 @@ export const getServiceAuthorizeMap = async (serviceId: string, retryCounter = 0
             serviceAuthorizeMap = TAuthorizeMap.parse(parsedResponse.data[0]?.authorizeMap);
         }
     } catch (error) {
-        const errorMsg = `Error while downloading the authorize map: ${String(error)}`;
+        const errorMsg = `Error while downloading the authorize map: ${getErrorMessage(error)}`;
         if (retryCounter < 3) {
             await wait(2000);
             return await getServiceAuthorizeMap(serviceId, retryCounter++);

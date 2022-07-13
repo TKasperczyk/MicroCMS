@@ -4,6 +4,7 @@ import { Router as Router, Request, Response, NextFunction } from "express";
 import { Socket } from "socket.io-client";
 
 import { appLogger, reqLogger } from "@framework";
+import { getErrorMessage } from "@framework/helpers";
 
 import { TMethods, TRequestQueue, TRequestQueueEntry, TCmsRequestResponse } from "@framework/types/communication/express";
 import { TSocketPool, TSocketPoolEntry, TCmsMessageResponse } from "@framework/types/communication/socket";
@@ -40,7 +41,7 @@ export class RouterManager {
             try {
                 this.connectRouterWithSocket(socketPoolEntry);
             } catch (error) {
-                ml.error({ socketPoolEntry }, `Couldn't connect a socket interface with an express route: ${String(error)}`);
+                ml.error({ socketPoolEntry }, `Couldn't connect a socket interface with an express route: ${getErrorMessage(error)}`);
                 return;
             }
         }
@@ -79,7 +80,7 @@ export class RouterManager {
             });
             this.getRequest(response.requestId).res.status(returnCode).json(parsedReqResponse);
         } catch (error) {
-            rl.error({ response, requestId: response.requestId }, `Failed to respond to a request, passing an error to the client: ${String(error)}`);
+            rl.error({ response, requestId: response.requestId }, `Failed to respond to a request, passing an error to the client: ${getErrorMessage(error)}`);
             parsedReqResponse = {
                 error: String(error),
                 data: null,
@@ -106,11 +107,11 @@ export class RouterManager {
                         this.passEventToService(socketPoolEntry.socket, routeMapping.eventName, req, requestId);
                         this.requestQueue[requestId] = { res, requestId };
                     } catch (error) {
-                        rl.error({ routeMapping, requestId, routeName }, `Failed to pass a request to the service socket: ${String(error)}`);
+                        rl.error({ routeMapping, requestId, routeName }, `Failed to pass a request to the service socket: ${getErrorMessage(error)}`);
                     }
                 });
             } catch (error) {
-                ml.error({ routeMapping }, `Failed to create a route mapping for ${socketPoolEntry.serviceId}: ${String(error)}`);
+                ml.error({ routeMapping }, `Failed to create a route mapping for ${socketPoolEntry.serviceId}: ${getErrorMessage(error)}`);
                 return;
             }
         });

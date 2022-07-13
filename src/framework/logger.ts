@@ -14,3 +14,14 @@ export const reqLogger = (name: string): Logger => {
         level: "trace"
     });
 };
+
+export const perfLogger = (name: string): Logger => {
+    return pino({
+        transport: {
+            target: "pino/file",
+            options: { destination: "./logs/performance/current.json", mkdir: true },
+        }, 
+        name,
+        level: "trace"
+    });
+};

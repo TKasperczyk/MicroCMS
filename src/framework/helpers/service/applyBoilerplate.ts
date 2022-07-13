@@ -4,8 +4,10 @@ import { Logger, LoggerOptions } from "pino";
 import { Socket } from "socket.io";
 
 import { ApiCall } from "@framework/core/communication/socket";
-import { addPacketId, shutdown } from "@framework/helpers/communication/socket/middleware";
-import { reannounce } from "@framework/helpers/service";
+import { addPacketId } from "@framework/helpers/communication/socket/middleware/addPacketId";
+import { shutdown } from "@framework/helpers/communication/socket/middleware/shutdown";
+import { getErrorMessage } from "@framework/helpers/getErrorMessage";
+import { reannounce } from "@framework/helpers/service/announce";
 
 import { TCmsMessage, TCmsMessageResponse, TRouteMapping, TSocketMiddleware } from "@framework/types/communication/socket";
 import { TSocketError } from "@framework/types/errors";
@@ -88,7 +90,7 @@ export const applyBoilerplate = <TServiceType>(
             httpServer.close();
             httpServer.listen(serviceSetup.port, "127.0.0.1");
         } catch (error) {
-            ml.error(`Error while trying to reconnect the socket or launching a new HTTP server: ${String(error)}`);
+            ml.error(`Error while trying to reconnect the socket or launching a new HTTP server: ${getErrorMessage(error)}`);
             return;
         }
     });
