@@ -3,7 +3,7 @@ import { Event } from "socket.io";
 
 import { isObject } from "@framework/helpers/assertions";
 import { extractPacketData } from "@framework/helpers/communication/socket/packetData";
-import { TData_User } from "@services/database/generic/data/user";
+import { TData_User } from "@services/database/generic/data/user/type";
 
 import { TApiResult, TAuthorizeMap, TAuthorizeMapOutput } from "@framework/types/communication";
 import { TSocketNextFunction , TCmsMessage } from "@framework/types/communication/socket";

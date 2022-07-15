@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb";
 import { z } from "zod";
 
+import { TSettings_SearchCategory } from "@services/database/generic/settings/searchCategory/type";
 import { TSettings_TicketGroup } from "@services/database/generic/settings/ticketGroup/type";
 
 import { TRequiredDefaults, TUpdateSpec } from "@framework/types/service";
@@ -35,12 +36,12 @@ export const TData_User = z.object({
         client: z.object({
             sendStats: z.boolean().default(false),
             canSignAnAgreement: z.boolean().default(true),
-            searchCategories: z.array(z.string()).default([]),
             searchResultLength: z.number().default(15),
             privateSeactionFields: z.array(z.string()).default([]),
             hideEmptyState: z.boolean().default(false),
             serviceStatusMonitor: z.boolean().default(true),
             colouredFields: z.boolean().default(true),
+            searchCategories: z.array(TSettings_SearchCategory).default([]),
             searchCategoryColours: z.array(z.object({
                 category: z.string(),
                 colour: z.string()

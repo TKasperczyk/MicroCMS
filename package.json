@@ -6,11 +6,12 @@
   "scripts": {
     "prebuild": "eslint --ignore-path .gitignore . --fix",
     "build": "tsc && tsc-alias",
-    "buildClean": "rm -rf ./dist/* && tsc && tsc-alias",
-    "checkCircular": "madge --circular --extensions js ./dist",
     "prestart": "npm run build",
     "start": "node dist/master | pino-pretty -c -t",
-    "reqLog": "cat logs/requests/current.json | jq -s 'sort_by(.time) | .[]' -c | pino-pretty -c -t 'SYS:standard'"
+    "reqLog": "cat logs/requests/current.json | jq -s 'sort_by(.time) | .[]' -c | pino-pretty -c -t 'SYS:standard'",
+    "perfLog": "cat logs/performance/current.json | jq -s 'sort_by(.time) | .[]' -c | pino-pretty -c -t 'SYS:standard'",
+    "checkCircular": "madge --circular --extensions js ./dist",
+    "generateService": "tsc && node dist/tools/generators/service.js"
   },
   "author": "Tomasz Kasperczyk",
   "license": "ISC",

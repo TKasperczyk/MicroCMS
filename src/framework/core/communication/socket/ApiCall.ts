@@ -3,7 +3,7 @@ import { Socket } from "socket.io";
 
 import { Authorizer } from "@framework/core/communication/Authorizer";
 import { getErrorMessage } from "@framework/helpers";
-import { TData_User } from "@services/database/generic/data/user";
+import { TData_User } from "@services/database/generic/data/user/type";
 
 import { TApiResult } from "@framework/types/communication";
 import { TCmsMessageResponse } from "@framework/types/communication/socket";

@@ -11,6 +11,7 @@ import { perfLogger } from "@framework/logger";
 
 import { TApiResult } from "@framework/types/communication";
 import { TCrudOperations } from "@framework/types/database";
+import { TCollectionIndex } from "@framework/types/database/mongo";
 import { TLooseObject } from "@framework/types/generic";
 import { TFactory, TGenericFactory, TRequiredDefaults } from "@framework/types/service";
 import { TUpdateSpec } from "@framework/types/service/UpdateSpec";
@@ -27,14 +28,12 @@ export class Crud<TReturn extends { _id?: ObjectId }> implements TCrudOperations
      * @param requiredDefaults - the list of dotted required fields with their default values
      * @param updateSpecs - a list of specifications of the associated objects that should be updated along with this one
      * @param indexes - a list of fields that should be indexed
-     * @param uniqueIndexes - a list of fields that should be unique
-     * @param autoIncrementField - a list of fields that should be auto-incremented
      */
     constructor(
         database: string, collection: string,
         validator: z.ZodType<TReturn>, factory: TGenericFactory<TReturn> | TFactory<TReturn>, 
         requiredDefaults: TRequiredDefaults = {}, updateSpecs: TUpdateSpec[] = [],
-        indexes: string[] = [], uniqueIndexes: string[] = [], autoIncrementField: null | string = null,
+        indexes: TCollectionIndex[], autoIncrementField: null | string = null,
     ) {
         this.mongo = new Mongo(database);
         this.collection = collection;
@@ -42,7 +41,6 @@ export class Crud<TReturn extends { _id?: ObjectId }> implements TCrudOperations
         this.factory = factory;
         this.requiredDefaults = requiredDefaults;
         this.indexes = indexes;
-        this.uniqueIndexes = uniqueIndexes;
         this.autoIncrementField = autoIncrementField;
         this.updateSpecs = updateSpecs;
 
@@ -54,8 +52,7 @@ export class Crud<TReturn extends { _id?: ObjectId }> implements TCrudOperations
     private validator: z.ZodType<TReturn>;
     private factory: TGenericFactory<TReturn> | TFactory<TReturn>;
     private requiredDefaults: TRequiredDefaults;
-    private indexes: string[];
-    private uniqueIndexes: string[];
+    private indexes: TCollectionIndex[];
     private autoIncrementField: null | string;
     private updateSpecs: TUpdateSpec[];
     private pf: Logger<LoggerOptions>;
@@ -66,10 +63,7 @@ export class Crud<TReturn extends { _id?: ObjectId }> implements TCrudOperations
     public async init(): Promise<void> {
         const connection = await this.mongo.getConnection();
         for (const index of this.indexes) {
-            await connection.collection(this.collection).createIndex(index);
-        }
-        for (const uniqueIndex of this.uniqueIndexes) {
-            await connection.collection(this.collection).createIndex(uniqueIndex, { unique: true });
+            await connection.collection(this.collection).createIndex(index.name, { unique: index.types.includes("unique"), sparse: index.types.includes("sparse") });
         }
     }
     
@@ -169,7 +163,7 @@ export class Crud<TReturn extends { _id?: ObjectId }> implements TCrudOperations
             this.pf.trace({ uuid }, "Add began");
             let documentFromFactory;
             try {
-                documentFromFactory = this.getDocumentFromFactory(documentToAdd);
+                documentFromFactory = this.getDocumentFromFactory(this.removeCoreFields(documentToAdd));
             } catch (error) {
                 throw new Error(`Error while parsing the incoming object: ${getErrorMessage(error)} - ${JSON.stringify(documentToAdd)}`);
             }

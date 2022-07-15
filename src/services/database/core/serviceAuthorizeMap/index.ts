@@ -20,7 +20,10 @@ const core_serviceAuthorizeMapCrud = new Crud<TCore_ServiceAuthorizeMap>(
     "test", serviceId, 
     TCore_ServiceAuthorizeMap, createCore_serviceAuthorizeMap, 
     core_serviceAuthorizerMapRequiredDefaults, core_serviceAuthorizerMapUpdateSpecs, 
-    [], ["serviceId"]
+    [{
+        name: "serviceId",
+        types: ["unique"]
+    }]
 );
 const { io, httpServer } = getIoServer();
 
