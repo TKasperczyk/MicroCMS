@@ -24,7 +24,7 @@ export class MessageParser extends IncomingParser {
     public middleware(packet: Event, next: TSocketNextFunction): void {
         let eventName: string, preMsg: TCmsPreMessage, msg: TCmsMessage;
         try {
-            ({ eventName, preMsg } = extractPrePacketData(packet));
+            ({ eventName, preMsg } = extractPrePacketData(packet)); //This includes TCmsPreMessage.parse(packet[1])
         } catch (error) {
             this.rl.error({ packet }, `Error while extracting data from an incoming packet: ${getErrorMessage(error)}`);
             return next(new TSocketError(String(error), ""));

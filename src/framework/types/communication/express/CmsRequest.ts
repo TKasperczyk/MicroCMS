@@ -3,7 +3,15 @@ import { z } from "zod";
 
 import { TLooseObject } from "@framework/types/generic/Object";
 
-export interface TCmsRequest extends Request { parsedQuery: TLooseObject, parsedBody: TLooseObject, parsedParams: TLooseObject }
+export interface TCmsPreRequest extends Request { 
+    requestId?: string,
+    cacheId?: string
+}
+
+export interface TCmsRequest extends Request { 
+    requestId: string,
+    cacheId: string
+}
 
 export const TCmsRequestResponse = z.object({
     status: z.boolean(), 

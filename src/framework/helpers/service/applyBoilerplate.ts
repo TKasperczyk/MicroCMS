@@ -4,7 +4,7 @@ import { Logger, LoggerOptions } from "pino";
 import { Socket } from "socket.io";
 
 import { ApiCall } from "@framework/core/communication/socket";
-import { addPacketId } from "@framework/helpers/communication/socket/middleware/addPacketId";
+import { addRequestId } from "@framework/helpers/communication/socket/middleware/addRequestId";
 import { shutdown } from "@framework/helpers/communication/socket/middleware/shutdown";
 import { getErrorMessage } from "@framework/helpers/getErrorMessage";
 import { reannounce } from "@framework/helpers/service/announce";
@@ -25,7 +25,7 @@ export const applyBoilerplate = <TServiceType>(
 ): void => {
     // Add common middleware
     socket.use(shutdown);
-    socket.use(addPacketId);
+    socket.use(addRequestId);
     serviceMiddlewares.forEach((serviceMiddleware) => {
         socket.use(serviceMiddleware);
     });

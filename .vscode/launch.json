@@ -8,7 +8,7 @@
         "type": "node",
         "request": "launch",
         "name": "Launch Program",
-        "program": "${workspaceFolder}/src/services/database/settings/netBundle/index.ts",
+        "program": "${workspaceFolder}/src/master/index.ts",
         "preLaunchTask": "npm: build",
         "outFiles": ["${workspaceFolder}/dist/**/*.js"]
       }

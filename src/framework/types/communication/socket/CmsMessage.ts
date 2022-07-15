@@ -27,6 +27,7 @@ export type TCmsMessage = z.input<typeof TCmsMessage>;
 
 export const TCmsPreMessage = z.object({ 
     requestId: z.string(), 
+    cacheId: z.string().optional(),
     user: TData_User
 }).passthrough();
 export type TCmsPreMessage = z.input<typeof TCmsPreMessage>;

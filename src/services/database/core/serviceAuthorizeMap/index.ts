@@ -28,6 +28,7 @@ const core_serviceAuthorizeMapCrud = new Crud<TCore_ServiceAuthorizeMap>(
 const { io, httpServer } = getIoServer();
 
 (async () => {
+    ml.info("Initializing the service");
     let core_serviceAuthorizeMapAuthorizer: Core_ServiceAuthorizeMapAuthorizer;
     try {
         await core_serviceAuthorizeMapCrud.init();

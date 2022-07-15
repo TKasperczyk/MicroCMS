@@ -1,12 +1,10 @@
-import { randomUUID } from "crypto";
-
 import { Router as Router, Request, Response, NextFunction } from "express";
 import { Socket } from "socket.io-client";
 
 import { appLogger, reqLogger } from "@framework";
 import { getErrorMessage } from "@framework/helpers";
 
-import { TMethods, TRequestQueue, TRequestQueueEntry, TCmsRequestResponse } from "@framework/types/communication/express";
+import { TMethods, TRequestQueue, TRequestQueueEntry, TCmsRequestResponse, TCmsRequest, TCmsPreRequest } from "@framework/types/communication/express";
 import { TSocketPool, TSocketPoolEntry, TCmsMessageResponse } from "@framework/types/communication/socket";
 
 const ml = appLogger("routerManager");
@@ -99,13 +97,22 @@ export class RouterManager {
                 const foundExpressMethodName = Object.keys(expressMethods).find(expressMethodName => routeMapping.method === expressMethodName) || "get";
     
                 const routeName = `/api${routeMapping.route}`.replace(/([^:]\/)\/+/g, "$1");
-                this.router[foundExpressMethodName as keyof typeof expressMethods](routeName, (req, res) => {
-                    const requestId = randomUUID();
+                this.router[foundExpressMethodName as keyof typeof expressMethods](routeName, (req: TCmsPreRequest, res) => {
+                    if (!req.requestId || !req.cacheId) {
+                        ml.error("Missing requestId or cacheId in the incoming request! Check if both middlewares are installed.");
+                        res.status(500).json(TCmsRequestResponse.parse({
+                            error: "Internal error",
+                            data: null,
+                            status: false
+                        }));
+                        return;
+                    }
+                    const { requestId, cacheId } = req;
                     // TODO: add user info to the log message
                     rl.info({ routeMapping, requestId, routeName }, `A new request to service ${socketPoolEntry.servicePort}, route: ${routeName}, event: ${routeMapping.eventName}`);
                     try {
-                        this.passEventToService(socketPoolEntry.socket, routeMapping.eventName, req, requestId);
-                        this.requestQueue[requestId] = { res, requestId };
+                        this.passEventToService(socketPoolEntry.socket, routeMapping.eventName, req as TCmsRequest);
+                        this.requestQueue[requestId] = { res, requestId, cacheId };
                     } catch (error) {
                         rl.error({ routeMapping, requestId, routeName }, `Failed to pass a request to the service socket: ${getErrorMessage(error)}`);
                     }
@@ -116,7 +123,7 @@ export class RouterManager {
             }
         });
     }
-    private passEventToService(socket: Socket, eventName: string, req: Request, requestId: string): string {
+    private passEventToService(socket: Socket, eventName: string, req: TCmsRequest): void {
         const payload = {
             user: {
                 login: "test",
@@ -125,11 +132,11 @@ export class RouterManager {
             body: req.body as unknown,
             params: req.params,
             query: req.query,
-            requestId
+            requestId: req.requestId,
+            cacheId: req.cacheId
         };
-        rl.trace({ eventName, requestId, payload }, "Passing a request to the service socket");
+        rl.trace({ eventName, requestId: req.requestId, payload }, "Passing a request to the service socket");
         socket.emit(eventName, payload);
-        return requestId;
     }
     private recreateExpressRouter(): void {
         this.router = Router();
