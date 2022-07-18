@@ -39,7 +39,7 @@ export class GenericService<TGenericService> {
             serviceIndexes
         );
         this.serviceMessageParser = new MessageParser(this.rl, serviceId, true);
-        this.serviceAnnouncer = announce.bind(null, this.servicePath, this.serviceRouteMappings);
+        this.serviceAnnouncer = announce.bind(null, this.serviceId, this.serviceRouteMappings);
         this.serviceAuthorizer = new Authorizer<TGenericService>({}, this.serviceId);
         this.httpServer = new HttpServer();
     }

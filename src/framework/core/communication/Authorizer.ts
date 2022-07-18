@@ -2,7 +2,9 @@ import * as dotObj from "dot-object";
 import { Event } from "socket.io";
 
 import { isObject } from "@framework/helpers/assertions";
+import { extractUserData } from "@framework/helpers/communication";
 import { extractPacketData } from "@framework/helpers/communication/socket/packetData";
+import { reqLogger } from "@framework/logger";
 import { TData_User } from "@services/database/generic/data/user/type";
 
 import { TApiResult, TAuthorizeMap, TAuthorizeMapOutput } from "@framework/types/communication";
@@ -15,6 +17,8 @@ import { TLooseObject } from "@framework/types/generic";
 */
 
 (dotObj.keepArray as boolean) = true; //eslint-disable-line
+
+const rl = reqLogger("Authorizer");
 
 export class Authorizer<InputType> {
     constructor(authorizeMap: TAuthorizeMap, serviceId: string) {
@@ -32,7 +36,8 @@ export class Authorizer<InputType> {
     protected customOperationLogic(operation: string): boolean { return true; }
     /* eslint-enable @typescript-eslint/no-unused-vars */
 
-    public authorizeOutput(response: TApiResult<InputType>, user: TData_User): TApiResult<InputType> {
+    public authorizeOutput(response: TApiResult<InputType>, user: TData_User, requestId: string): TApiResult<InputType> {
+        rl.trace({ user: extractUserData(user), requestId }, "Authorizing a response");
         if (!user?.login || !user?.group) {
             throw new Error("Malformed or missing user object");
         }
@@ -42,13 +47,15 @@ export class Authorizer<InputType> {
 
         let result: TApiResult<InputType> = response;
 
-        const groupEntry = this.authorizeMap.group[user.group]?.hiddenReadFields;
-        const userEntry = this.authorizeMap.user[user.login]?.hiddenReadFields;
-        if (groupEntry) {
-            result = this.hideFields(result, groupEntry);
+        const groupEntry = this.authorizeMap.group[user.group];
+        const userEntry = this.authorizeMap.user[user.login];
+        if (groupEntry?.hiddenReadFields) {
+            rl.trace({ requestId, groupEntry }, "Filtering the response by group");
+            result = this.hideFields(result, groupEntry.hiddenReadFields);
         }
-        if (userEntry) {
-            result = this.hideFields(result, userEntry);
+        if (userEntry?.hiddenReadFields) {
+            rl.trace({ requestId, groupEntry }, "Filtering the response by login");
+            result = this.hideFields(result, userEntry.hiddenReadFields);
         }
         result = this.customOutputLogic(result, user);
 
@@ -56,6 +63,7 @@ export class Authorizer<InputType> {
     }
     public middleware(packet: Event, next: TSocketNextFunction): void {
         const { msg, eventName } = extractPacketData(packet);
+        rl.trace({ user: extractUserData(msg), requestId: msg?.requestId }, "Authorizing an incoming request");
         if (!this.checkUserObj(msg)) {
             return next(new TSocketError("Malformed or missing user object in the incoming message", msg.requestId));
         }

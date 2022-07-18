@@ -3,8 +3,10 @@
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
         "project": "./tsconfig.json",
+        "files": ["*.ts", "*.tsx"],
         "tsconfigRootDir": "./"
     },
+    "ignorePatterns": ["**/*.js", "dist/**", "node_modules/**"],
     "plugins": ["@typescript-eslint", "import"],
     "extends": [
         "eslint:recommended",

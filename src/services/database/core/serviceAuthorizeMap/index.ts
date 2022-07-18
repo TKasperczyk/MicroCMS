@@ -38,7 +38,7 @@ const { io, httpServer } = getIoServer();
         process.exit();
     }
     const core_serviceAuthorizeMapOutputAuthorizer = core_serviceAuthorizeMapAuthorizer.authorizeOutput.bind(core_serviceAuthorizeMapAuthorizer);
-    const core_serviceAuthorizeMapAnnounce = announce.bind(null, servicePath, core_serviceAuthorizeMapRouteMappings);
+    const core_serviceAuthorizeMapAnnounce = announce.bind(null, serviceId, core_serviceAuthorizeMapRouteMappings);
 
     io.on("connection", (socket) => {
         ml.info("The socket is connected with the main server");

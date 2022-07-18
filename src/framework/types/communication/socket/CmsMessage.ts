@@ -10,6 +10,7 @@ export const TCmsMessageResponse = z.object({
     data: z.union([TLooseObject, z.array(TLooseObject), z.null()]), 
     error: z.string().optional(), 
     requestId: z.string(), 
+    cacheId: z.string().optional(),
     returnCode: z.number()
 }).strict();
 export type TCmsMessageResponse = z.input<typeof TCmsMessageResponse>;
@@ -19,6 +20,7 @@ export const TCmsMessage = z.object({
     parsedBody: TLooseObject, 
     parsedParams: TLooseObject, 
     requestId: z.string(), 
+    cacheId: z.string().optional(),
     error: TCmsMessageResponse.optional(), 
     user: TData_User, 
     authorizer: TAuthorizeMapEntry.optional()

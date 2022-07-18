@@ -1,18 +1,22 @@
 import express, { Express, json } from "express";
+import helmet from "helmet";
+import nocache from "nocache";
 
-import { appLogger } from "@framework";
+import { appLogger, reqLogger } from "@framework";
 //import { ReqParser } from "@framework/core/communication/express";
 import { ReqCache } from "@framework/core/cache";
 import { getErrorMessage } from "@framework/helpers";
 import { addRequestId, addCacheId } from "@framework/helpers/communication/express/middleware";
 import { messageResponseHandler } from "@framework/helpers/server";
 
+import { TCmsRequest } from "@framework/types/communication/express";
 import { TSocketPoolEntry, TCmsMessageResponse } from "@framework/types/communication/socket";
 
 import { Discovery } from "./Discovery";
 import { RouterManager } from "./RouterManager";
 
 const ml = appLogger("server");
+const rl = reqLogger("server");
 //const reqParser = new ReqParser();
 
 let discovery: Discovery, routerManager: RouterManager, app: Express;
@@ -25,6 +29,9 @@ try {
     process.exit();
 }
 
+const reqCache = new ReqCache(routerManager);
+routerManager.customMiddlewareList.push(addCacheId, reqCache.middleware.bind(reqCache));
+
 try {
     discovery.initServer();
 } catch (error) {
@@ -32,12 +39,19 @@ try {
     process.exit();
 }
 
-const reqCache = new ReqCache(routerManager.getRequest.bind(routerManager));
-
+app.use(helmet());
+app.use(nocache());
 app.use(json());
+app.use((req, res, next) => {
+    const cmsRequest = req as TCmsRequest;
+    const login = Math.random() > 0.5 ? "test" : "test1";
+    cmsRequest.user = cmsRequest.user ? cmsRequest.user : {
+        login,
+        group: login === "test" ? "testGroup" : "testGroup1",
+    };
+    next();
+});
 app.use(addRequestId);
-app.use(addCacheId);
-app.use(reqCache.middleware.bind(reqCache));
 app.use(routerManager.middleware.bind(routerManager));
 
 discovery.on("register", (socketPoolEntry: TSocketPoolEntry) => {
@@ -50,13 +64,8 @@ discovery.on("register", (socketPoolEntry: TSocketPoolEntry) => {
     }
     ml.info(`Created new express routes for service: ${socketPoolEntry.serviceId}`);
 
-    socketPoolEntry.socket.on("response", (response: TCmsMessageResponse) => {
-        reqCache.saveToCache(response).then(() => {
-            messageResponseHandler(response, routerManager);
-        }).catch((error) => {
-            console.error(error);
-            messageResponseHandler(response, routerManager);
-        });
+    socketPoolEntry.socket.on("response", (cmsMessageResponse: TCmsMessageResponse) => {
+        messageResponseHandler(cmsMessageResponse, routerManager, reqCache);
     });
     socketPoolEntry.socket.on("fatalError", (error: unknown) => {
         ml.error({ error }, `Received a fatal error from ${socketPoolEntry.serviceId}. There's a hanging request now`);

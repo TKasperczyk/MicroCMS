@@ -38,6 +38,7 @@ export const applyBoilerplate = <TServiceType>(
             (msg: TCmsMessage) => 
                 serviceApiCall.performStandard(
                     msg.requestId, 
+                    msg.cacheId,
                     msg.user, 
                     callbackFactories[callbackFactoriesKey](msg)
                 )
