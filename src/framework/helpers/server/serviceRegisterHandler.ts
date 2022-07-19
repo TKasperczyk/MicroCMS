@@ -2,20 +2,22 @@ import { Logger, LoggerOptions } from "pino";
 
 import { ReqCache } from "@framework/core/cache";
 import { messageResponseHandler } from "@framework/helpers/server/messageResponseHandler";
+import { Discovery } from "src/server/Discovery";
 import { RouterManager } from "src/server/RouterManager";
 
-import { TCmsMessageResponse, TSocketPoolEntry } from "@framework/types/communication/socket";
+import { TCmsMessageResponse } from "@framework/types/communication/socket";
 
 export const serviceRegisterHandler = (
     ml: Logger<LoggerOptions>, 
-    socketPoolEntry: TSocketPoolEntry,
+    serviceId: string,
     routerManager: RouterManager,
     reqCache: ReqCache,
+    discovery: Discovery
 ): void => {
-    socketPoolEntry.socket.on("response", (cmsMessageResponse: TCmsMessageResponse) => {
+    discovery.sockets[serviceId].socket.on("response", (cmsMessageResponse: TCmsMessageResponse) => {
         messageResponseHandler(cmsMessageResponse, routerManager, reqCache);
     });
-    socketPoolEntry.socket.on("fatalError", (error: unknown) => {
-        ml.error({ error }, `Received a fatal error from ${socketPoolEntry.serviceId}. There's a hanging request now`);
+    discovery.sockets[serviceId].socket.on("fatalError", (error: unknown) => {
+        ml.error({ error }, `Received a fatal error from ${serviceId}. There's a hanging request now`);
     });
 };

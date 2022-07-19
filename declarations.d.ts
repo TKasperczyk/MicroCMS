@@ -1,1 +1,1 @@
-declare module "mongodb-autoincrement";
+declare module "express-remove-route";

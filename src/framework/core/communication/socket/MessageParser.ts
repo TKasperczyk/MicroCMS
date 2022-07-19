@@ -3,6 +3,7 @@ import { Event } from "socket.io";
 
 import { IncomingParser } from "@framework/core/communication/IncomingParser";
 import { getErrorMessage } from "@framework/helpers";
+import { extractUserData } from "@framework/helpers/communication";
 import { extractPrePacketData } from "@framework/helpers/communication/socket";
 
 import { TCmsMessage, TCmsPreMessage, TSocketNextFunction } from "@framework/types/communication/socket";
@@ -29,7 +30,7 @@ export class MessageParser extends IncomingParser {
             this.rl.error({ packet }, `Error while extracting data from an incoming packet: ${getErrorMessage(error)}`);
             return next(new TSocketError(String(error), ""));
         }
-        this.rl.debug({ requestId: preMsg.requestId || null }, `Parsing an incoming message for ${eventName}`); //eslint-disable-line @typescript-eslint/no-unsafe-assignment
+        this.rl.debug({ requestId: preMsg?.requestId, preMsg: { ...preMsg, user: extractUserData(preMsg?.user) } }, `Parsing an incoming message for ${eventName}`); //eslint-disable-line @typescript-eslint/no-unsafe-assignment
         try {
             msg = this.parseMessage(preMsg, eventName);
         } catch (error) {

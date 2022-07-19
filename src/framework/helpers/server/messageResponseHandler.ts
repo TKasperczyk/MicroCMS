@@ -23,7 +23,7 @@ export const messageResponseHandler = (cmsMessageResponse: TCmsMessageResponse, 
     //Convert the parsed message response to a request response
     const cmsRequestResponse = socketToExpressResponse(parsedCmsMessageResponse);
     if (cmsRequestResponse.returnCode === 500) {
-        rl.error({ cmsMessageResponse, requestId: cmsMessageResponse.requestId }, "Failed to respond to a request, passing an error to the client");
+        rl.error({ cmsMessageResponse, requestId: cmsMessageResponse.requestId }, "The service returned an error, passing it to the client");
     }
 
     //Don't save errors

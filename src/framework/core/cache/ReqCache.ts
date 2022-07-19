@@ -100,6 +100,7 @@ export class ReqCache {
     }
     private async middlewareGetHandler(cmsRequest: TCmsRequest, methodName: string, res: Response): Promise<boolean> {
         if (!this.saveMethods.includes(methodName)) {
+            rl.trace({ requestId: cmsRequest.requestId, methodName }, "Passing - uncachable express method");
             return false;
         }
         const result = await this.get(cmsRequest.cacheId, cmsRequest.serviceId);
@@ -110,6 +111,7 @@ export class ReqCache {
         try {
             const cmsRequestResponse = TCmsRequestResponse.parse({ ...result, fromCache: true });
             res.status(200).json(cmsRequestResponse);
+            rl.trace({ requestId: cmsRequest.requestId }, "Provided a response from cache");
             return true;
         } catch (error) {
             ml.error({ result }, `Failed to convert a cache object to a CmsRequestResponse: ${getErrorMessage(error)}`);

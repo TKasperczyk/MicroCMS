@@ -18,28 +18,23 @@ export class Discovery {
         this.nextServicePort = baseServicePort;
         this.httpServer = null;
 
-        this.socketPool = {};
         this.emitter = new EventEmitter();
     }
 
     private port: number;
     private nextServicePort: number;
     private httpServer: Express | null;
-    private socketPool: TSocketPool | Record<string, never>;
     private emitter: EventEmitter;
+
+    private static socketPool: TSocketPool | Record<string, never> = {};
 
     public initServer(): void {
         this.httpServer = express();
         this.httpServer.use(json());
         this.httpServer.post("/discovery", (req, res) => {
             ml.info("A new service request, parsing the discovery pack...");
-            let discoveryPack: TDiscoveryPack;
-            try {
-                discoveryPack = TDiscoveryPack.parse(req.body);
-            } catch (error) {
-                ml.error(`Failed to parse the discovery pack: ${getErrorMessage(error)}`);
-                return;
-            }
+            const discoveryPack = this.parseDiscoveryPack(req.body);
+            if (!discoveryPack) return;
             
             const servicePort = this.nextServicePort++;
             ml.info(`Sending the setup object to: ${discoveryPack.serviceId} with port ${servicePort}`); 
@@ -49,28 +44,8 @@ export class Discovery {
             const socket = io(`http://127.0.0.1:${servicePort}`, {
                 transports: ["websocket"],
             });
-            let socketId = "";
-            socket.on("connect", () => {
-                ml.info(`The service ${discoveryPack.serviceId} is now connected, registering`);
-                socketId = socket.id;
-                try {
-                    this.registerService(socket, discoveryPack, servicePort);
-                } catch (error) {
-                    ml.error({ discoveryPack }, `Error while registering a service ${discoveryPack.serviceId}: ${getErrorMessage(error)}`);
-                    this.shutdownService(socket);
-                    this.turnOffSocket(socket);
-                    return;
-                }
-                ml.info(`Registered a new service: ${discoveryPack.serviceId}. The socket ${socketId} is connected on port ${servicePort}`);
-            });
-            socket.on("disconnect", (reason) => {
-                ml.warn(`Socket ${socketId} disconnected: ${reason} (${discoveryPack.serviceId}). Unregistering this service`);
-                try {
-                    this.unregisterService(discoveryPack.serviceId);
-                } catch (error) {
-                    ml.error(`Error while unregistering a service ${discoveryPack.serviceId}: ${getErrorMessage(error)}`);
-                }
-            });
+
+            this.createSocketListeners(socket, discoveryPack, servicePort);
         });
         this.httpServer.listen(this.port, "127.0.0.1");
         ml.info(`Listening on port ${this.port}`);
@@ -79,14 +54,44 @@ export class Discovery {
         this.emitter.on(eventName, callback);
     }
     
+    private createSocketListeners(socket: Socket, discoveryPack: TDiscoveryPack, servicePort: number) {
+        socket.on("connect", () => {
+            ml.info(`The service ${discoveryPack.serviceId} is now connected, registering`);
+            try {
+                this.registerService(socket, discoveryPack, servicePort);
+            } catch (error) {
+                ml.error({ discoveryPack }, `Error while registering a service ${discoveryPack.serviceId}: ${getErrorMessage(error)}`);
+                this.shutdownService(socket);
+                return;
+            }
+            ml.info(`Registered a new service: ${discoveryPack.serviceId}. The socket ${socket.id} is connected on port ${servicePort}`);
+        });
+        socket.on("disconnect", (reason) => {
+            ml.warn(`Socket ${socket.id} disconnected: ${reason} (${discoveryPack.serviceId}). Unregistering this service`);
+            try {
+                this.unregisterService(discoveryPack.serviceId);
+            } catch (error) {
+                ml.error(`Error while unregistering a service ${discoveryPack.serviceId}: ${getErrorMessage(error)}`);
+            }
+        });
+    }
+    private parseDiscoveryPack(discoveryPack: unknown): TDiscoveryPack | null {
+        try {
+            return TDiscoveryPack.parse(discoveryPack);
+        } catch (error) {
+            ml.error(`Failed to parse the discovery pack: ${getErrorMessage(error)}`);
+        }
+        return null;
+    }
     private shutdownService(socket: Socket): void {
+        socket.offAny().removeAllListeners().close();
         socket.emit("shutdown");
     }
     private turnOffSocket(socket: Socket): void {
         socket.offAny().removeAllListeners().close();
     }
     private registerService(socket: Socket, discoveryPack: TDiscoveryPack, servicePort: number): void {
-        if (typeof this.socketPool[discoveryPack.serviceId] !== "undefined") {
+        if (typeof this.sockets[discoveryPack.serviceId] !== "undefined") {
             throw new Error(`Tried to register an already existing service: ${discoveryPack.serviceId}`);
         }
         const socketPoolEntry: TSocketPoolEntry = {
@@ -95,18 +100,21 @@ export class Discovery {
             servicePort,
             serviceId: discoveryPack.serviceId
         };
-        this.socketPool[discoveryPack.serviceId] = socketPoolEntry;
-        this.emitter.emit("register", socketPoolEntry);
+        this.sockets[discoveryPack.serviceId] = socketPoolEntry;
+        this.emitter.emit("register", discoveryPack.serviceId);
     }
     private unregisterService(serviceId: string): void {
-        if (this.socketPool[serviceId]?.socket instanceof Socket) {
-            this.turnOffSocket(this.socketPool[serviceId].socket);
-            delete this.socketPool[serviceId];
+        if (!this.sockets[serviceId]) {
+            return;
+        }
+        if (this.sockets[serviceId]?.socket instanceof Socket) {
+            this.turnOffSocket(this.sockets[serviceId].socket);
+            delete this.sockets[serviceId];
         }
         this.emitter.emit("unregister", serviceId);
     }
 
     get sockets(): TSocketPool {
-        return this.socketPool;
+        return Discovery.socketPool;
     }
 }

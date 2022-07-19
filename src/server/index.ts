@@ -23,7 +23,13 @@ const ml = appLogger("server");
 let discovery: Discovery, routerManager: RouterManager, app: Express;
 try {
     discovery = new Discovery();
-    routerManager = new RouterManager();
+    routerManager = new RouterManager((serviceId: string): TSocketPoolEntry | null => {
+        const socketPoolEntry = discovery.sockets[serviceId];
+        if (!socketPoolEntry) {
+            return null;
+        }
+        return socketPoolEntry;
+    });
     app = express();
 } catch (error) {
     ml.error(`Failed to create the core modules: ${getErrorMessage(error)}`);
@@ -55,36 +61,25 @@ app.use((req, res, next) => {
 app.use(addRequestId);
 app.use(routerManager.middleware.bind(routerManager));
 
-let servicesToRegister: TSocketPoolEntry[] = [];
-discovery.on("register", (socketPoolEntry: TSocketPoolEntry) => {
-    if (socketPoolEntry.serviceId.startsWith("core")) {
-        registerServiceRunner([socketPoolEntry]);
-    } else {
-        servicesToRegister.push(socketPoolEntry);
-    }
-});
-const registerServiceRunner = (servicesToRegister: TSocketPoolEntry[]) => {
-    if (!servicesToRegister.length) {
-        return;
-    }
-    servicesToRegister.forEach((serviceToRegister) => {
-        serviceRegisterHandler(ml, serviceToRegister, routerManager, reqCache);
-    });
+discovery.on("register", (serviceId: string) => {
+    ml.info(`Adding new express routes for service: ${serviceId}`);
     try {
-        routerManager.replace(discovery.sockets);
+        serviceRegisterHandler(ml, serviceId, routerManager, reqCache, discovery);
+        routerManager.addServiceRoutes(serviceId);
     } catch (error) {
-        ml.error(`Failed to replace the router: ${getErrorMessage(error)}`);
+        ml.error(`Failed to register a new service: ${serviceId}: ${getErrorMessage(error)}`);
         return;
     }
-};
-setInterval(() => { registerServiceRunner(servicesToRegister); servicesToRegister = []; }, 2000);
+    ml.info(`Created new express routes for service: ${serviceId}`);
+
+});
 
 discovery.on("unregister", (serviceId: string) => {
     ml.info(`Removing express routes for service: ${serviceId}`);
     try {
-        routerManager.replace(discovery.sockets);
+        routerManager.removeServiceRoutes(serviceId);
     } catch (error) {
-        ml.error(`Failed to replace the router for service: ${serviceId}: ${getErrorMessage(error)}`);
+        ml.error(`Failed to remove routes of service: ${serviceId}: ${getErrorMessage(error)}`);
         return;
     }
     ml.info(`Removed express routes for service: ${serviceId}`);
