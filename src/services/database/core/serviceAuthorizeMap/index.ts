@@ -1,3 +1,5 @@
+import { parentPort } from "node:worker_threads";
+
 import { appLogger, reqLogger } from "@framework";
 import { MessageParser, ApiCall } from "@framework/core/communication/socket";
 import { Crud } from "@framework/database/mongo";
@@ -60,6 +62,7 @@ const { io, httpServer } = getIoServer();
         const serviceSetup = await reannounce(core_serviceAuthorizeMapAnnounce);
         httpServer.listen(serviceSetup.port, "127.0.0.1");
         ml.info(`Listening on port ${serviceSetup.port}`);
+        parentPort?.postMessage("initialized");
     } catch (error) {
         ml.error(`Error while announcing the service or launching the HTTP server: ${getErrorMessage(error)}`);
         process.exit();

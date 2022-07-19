@@ -71,6 +71,7 @@ export class GenericService<TGenericService> {
         this.createSocketListeners(io, httpServer);
 
         try {
+            this.ml.debug("Announcing the service and waiting for a response...");
             const serviceSetup = await reannounce(this.serviceAnnouncer);
             httpServer.listen(serviceSetup.port, "127.0.0.1");
             this.ml.info(`Service ${this.serviceId} listening on port ${serviceSetup.port}`);
@@ -142,7 +143,9 @@ export class GenericService<TGenericService> {
     }
     private async init(): Promise<boolean> {
         try {
+            this.ml.trace("Initializing database CRUD...");
             await this.serviceCrud.init();
+            this.ml.trace("Downloading the authorization map...");
             this.serviceAuthorizer = await getServiceAuthorizer<TGenericService>(this.serviceId);
         } catch (error) {
             this.ml.error(`Error while initializing the service: ${getErrorMessage(error)}`);

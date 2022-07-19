@@ -1,7 +1,6 @@
 import { ObjectId } from "mongodb";
 import { z } from "zod";
 
-import { TServiceType } from "@framework/types/enums";
 import { TRequiredDefaults, TUpdateSpec } from "@framework/types/service";
 
 export const TSettings_NetBundle = z.object({
@@ -9,7 +8,7 @@ export const TSettings_NetBundle = z.object({
     name: z.string(),
     upMbps: z.number().default(0),
     downMbps: z.number().default(0),
-    availableForService: TServiceType.default("net"),
+    availableForService: z.enum(["net"]).default("net"),
     netPrice: z.number().default(0),
     indefinitePrice: z.number().default(0),
     installationIndefinitePrice: z.number().default(0),

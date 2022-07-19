@@ -1,22 +1,23 @@
+import { parentPort } from "node:worker_threads";
+
 import express, { Express, json } from "express";
 import helmet from "helmet";
 import nocache from "nocache";
 
-import { appLogger, reqLogger } from "@framework";
+import { appLogger } from "@framework";
 //import { ReqParser } from "@framework/core/communication/express";
 import { ReqCache } from "@framework/core/cache";
 import { getErrorMessage } from "@framework/helpers";
 import { addRequestId, addCacheId } from "@framework/helpers/communication/express/middleware";
-import { messageResponseHandler } from "@framework/helpers/server";
+import { serviceRegisterHandler } from "@framework/helpers/server";
 
 import { TCmsRequest } from "@framework/types/communication/express";
-import { TSocketPoolEntry, TCmsMessageResponse } from "@framework/types/communication/socket";
+import { TSocketPoolEntry } from "@framework/types/communication/socket";
 
 import { Discovery } from "./Discovery";
 import { RouterManager } from "./RouterManager";
 
 const ml = appLogger("server");
-const rl = reqLogger("server");
 //const reqParser = new ReqParser();
 
 let discovery: Discovery, routerManager: RouterManager, app: Express;
@@ -54,23 +55,29 @@ app.use((req, res, next) => {
 app.use(addRequestId);
 app.use(routerManager.middleware.bind(routerManager));
 
+let servicesToRegister: TSocketPoolEntry[] = [];
 discovery.on("register", (socketPoolEntry: TSocketPoolEntry) => {
-    ml.info(`Adding new express routes for service: ${socketPoolEntry.serviceId}`);
+    if (socketPoolEntry.serviceId.startsWith("core")) {
+        registerServiceRunner([socketPoolEntry]);
+    } else {
+        servicesToRegister.push(socketPoolEntry);
+    }
+});
+const registerServiceRunner = (servicesToRegister: TSocketPoolEntry[]) => {
+    if (!servicesToRegister.length) {
+        return;
+    }
+    servicesToRegister.forEach((serviceToRegister) => {
+        serviceRegisterHandler(ml, serviceToRegister, routerManager, reqCache);
+    });
     try {
         routerManager.replace(discovery.sockets);
     } catch (error) {
-        ml.error(`Failed to replace the router for service: ${socketPoolEntry.serviceId}: ${getErrorMessage(error)}`);
+        ml.error(`Failed to replace the router: ${getErrorMessage(error)}`);
         return;
     }
-    ml.info(`Created new express routes for service: ${socketPoolEntry.serviceId}`);
-
-    socketPoolEntry.socket.on("response", (cmsMessageResponse: TCmsMessageResponse) => {
-        messageResponseHandler(cmsMessageResponse, routerManager, reqCache);
-    });
-    socketPoolEntry.socket.on("fatalError", (error: unknown) => {
-        ml.error({ error }, `Received a fatal error from ${socketPoolEntry.serviceId}. There's a hanging request now`);
-    });
-});
+};
+setInterval(() => { registerServiceRunner(servicesToRegister); servicesToRegister = []; }, 2000);
 
 discovery.on("unregister", (serviceId: string) => {
     ml.info(`Removing express routes for service: ${serviceId}`);
@@ -85,3 +92,5 @@ discovery.on("unregister", (serviceId: string) => {
 
 ml.info("Listening on 2000");
 app.listen(2000, "127.0.0.1");
+
+parentPort?.postMessage("initialized");
