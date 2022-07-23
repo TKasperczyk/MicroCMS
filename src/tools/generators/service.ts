@@ -30,31 +30,45 @@ import { z } from "zod";
 import { TRequiredDefaults, TUpdateSpec } from "@framework/types/service";
 
 export const T${serviceTypeName} = z.object({
-    _id: z.instanceof(ObjectId).optional()
+    _id: z.instanceof(ObjectId).optional(),
+    name: z.string().trim()
 }).strict();
 export type T${serviceTypeName} = z.input<typeof T${serviceTypeName}>;
 
-export const ${serviceVarName}RequiredDefaults: TRequiredDefaults = {};
+export const ${serviceVarName}RequiredDefaults: TRequiredDefaults = {
+    "name": ""
+};
 
 export const ${serviceVarName}UpdateSpecs: TUpdateSpec[] = [];
 `;
 
 const indexFile = `
-import { runGenericService } from "@framework/service/generic";
+import { GenericService } from "@framework/core/service";
+
+import { TGenericSpec } from "@framework/types/service";
 
 import { T${serviceTypeName}, ${serviceVarName}RequiredDefaults, ${serviceVarName}UpdateSpecs } from "./type";
 
-runGenericService<T${serviceTypeName}>({
+export const serviceSpec: TGenericSpec<${serviceTypeName}> = {
     serviceId: "${serviceName}",
     servicePath: "${serviceNamePrefix}/${serviceNameSuffix}",
     serviceValidator: T${serviceTypeName},
     serviceRequiredDefaults: ${serviceVarName}RequiredDefaults,
     serviceUpdateSpecs: ${serviceVarName}UpdateSpecs,
-    serviceIndexes: [],
-    serviceUniqueIndexes: []
-}).then().catch((error) => {
-    console.error(error);
-});
+    serviceIndexes: [{
+        name: "name",
+        types: ["unique"]
+    }],
+};
+export type TService = TGeneric_Settings_Client_AgreementLength;
+
+export const serviceInstance = new GenericService<T${serviceTypeName}>(serviceSpec);
+
+if (process.env.startGenericServices === "true") { 
+    serviceInstance.run().then(running => running ? true : process.exit()).catch((error) => {
+        console.error(error);
+    });
+}
 `;
 
 if (!fs.existsSync(`${serviceDirPath}/type.ts`)) {

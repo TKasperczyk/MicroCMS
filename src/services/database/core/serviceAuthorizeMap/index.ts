@@ -60,6 +60,9 @@ const { io, httpServer } = getIoServer();
 
     try {
         const serviceSetup = await reannounce(core_serviceAuthorizeMapAnnounce);
+        if (!serviceSetup) {
+            throw new Error("Couldn't announce the service!");
+        }
         httpServer.listen(serviceSetup.port, "127.0.0.1");
         ml.info(`Listening on port ${serviceSetup.port}`);
         parentPort?.postMessage("initialized");

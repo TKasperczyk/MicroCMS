@@ -22,10 +22,13 @@ export const announce = async (serviceId: string, routes: TRouteMapping[]): Prom
     return TSetupObject.parse(await response.json());
 };
 
-export const reannounce = async (annouce: () => Promise<TSetupObject>): Promise<TSetupObject> => {
-    let unavailable = true, setupObject = { port: 0 };
+export const reannounce = async (annouce: () => Promise<TSetupObject>, shouldStopAnnouncing: () => boolean = () => false): Promise<TSetupObject | null> => {
+    let unavailable = true, setupObject = null;
     while (unavailable) {
         try {
+            if (shouldStopAnnouncing()) {
+                return null;
+            }
             setupObject = await annouce();
             unavailable = false;
         } catch (error) {

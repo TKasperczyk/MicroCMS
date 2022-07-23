@@ -206,9 +206,9 @@ export class Crud<TReturn extends { _id?: ObjectId }> implements TCrudOperations
                 throw new Error(`Error while parsing the incoming object: ${getErrorMessage(error)} - ${JSON.stringify(documentToUpdate)}`);
             }
             
-            const dDocumentToUpdate = this.updateDocumentObjWithDefaultsDot(documentFromFactory, documentToUpdate);
+            const dDocumentToUpdate = dotObj.dot(documentToUpdate) as TLooseObject;//this.updateDocumentObjWithDefaultsDot(documentFromFactory, documentToUpdate);
 
-            const { value } = await connection.collection(this.collection).findOneAndUpdate({ _id: mongoId }, { $set: dotObj.object(dDocumentToUpdate) }, { upsert: false, returnDocument: "after" });
+            const { value } = await connection.collection(this.collection).findOneAndUpdate({ _id: mongoId }, { $set: dDocumentToUpdate }, { upsert: false, returnDocument: "after" });
             if (value === null) {
                 throw new Error(`Error while updating an object: the provided id doesn't exist ${id}`);
             }
@@ -457,7 +457,7 @@ export class Crud<TReturn extends { _id?: ObjectId }> implements TCrudOperations
         const dDocumentFromTFactory = dotObj.dot(documentFromFactory) as TLooseObject;
         const dDocumentToUpdate = dotObj.dot(documentToUpdate) as TLooseObject;
         for (const key of Object.keys(dDocumentToUpdate)) {
-            dDocumentToUpdate[key] = dDocumentFromTFactory[key] as TLooseObject;
+            dDocumentToUpdate[key] = dotObj.pick(key, dDocumentFromTFactory) as unknown;
         }
         return dDocumentToUpdate;
     }

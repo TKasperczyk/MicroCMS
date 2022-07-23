@@ -4,22 +4,11 @@ import { Worker } from "node:worker_threads";
 import { command } from "yargs";
 
 import { getErrorMessage } from "@framework/helpers";
-import { getFilesRecursive } from "@framework/helpers/fileSystem";
+import { getServicePaths } from "@framework/helpers/fileSystem";
 import { appLogger } from "@framework/logger";
 
 const argv = command("generic", "A single generic service to run").parseSync();
-
 const ml = appLogger("master");
-
-const getServicePaths = async (dir: string): Promise<string[]> => {
-    const pathsForGroup: string[] = [];
-    for await (const filePath of getFilesRecursive(dir)) {
-        if (/index.js$/.test(filePath)) {
-            pathsForGroup.push(filePath);
-        }
-    }
-    return pathsForGroup;
-};
 
 (async () => {
     const serverPath = path.resolve("dist/server/index.js");
@@ -67,7 +56,7 @@ const getServicePaths = async (dir: string): Promise<string[]> => {
         }
         ml.info("Core workers initialized. Running generic services");
         genericPaths.forEach((genericPath) => {
-            new Worker(genericPath);
+            new Worker(genericPath, { env: { startGenericServices: "true" } });
         });
         clearInterval(waitForCoreWorkers);
     }, 500);

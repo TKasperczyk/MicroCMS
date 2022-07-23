@@ -4,7 +4,7 @@ import { Socket } from "socket.io";
 import { Authorizer } from "@framework/core/communication/Authorizer";
 import { getErrorMessage } from "@framework/helpers";
 import { extractUserData } from "@framework/helpers/communication";
-import { TData_User } from "@services/database/generic/data/user/type";
+import { TGeneric_Data_User } from "@services/database/generic/data/user/type";
 
 import { TApiResult } from "@framework/types/communication";
 import { TCmsMessageResponse } from "@framework/types/communication/socket";
@@ -23,13 +23,13 @@ export class ApiCall <TReturn> {
     protected rl: Logger<LoggerOptions>;
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
-    protected prePerform(requestId: string, user: TData_User): void { return; }
-    protected postPerform(requestId: string, user: TData_User, result: TApiResult<TReturn> | null, error: Error | null): void { return; }
+    protected prePerform(requestId: string, user: TGeneric_Data_User): void { return; }
+    protected postPerform(requestId: string, user: TGeneric_Data_User, result: TApiResult<TReturn> | null, error: Error | null): void { return; }
     /* eslint-enable @typescript-eslint/no-unused-vars */
 
     //Resolves to null when it catches an error
     public async performStandard(
-        requestId: string, cacheId: string | undefined, user: TData_User,
+        requestId: string, cacheId: string | undefined, user: TGeneric_Data_User,
         apiFunction: () => Promise<TApiResult<TReturn>>
     ): Promise<TApiResult<TReturn> | null> {
         const userToLog = extractUserData(user);

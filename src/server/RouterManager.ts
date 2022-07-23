@@ -105,7 +105,8 @@ export class RouterManager {
             }
         });
     }
-    public removeServiceRoutes(serviceId: string): void {
+    /* TODO */
+    public removeServiceRoutes(serviceId: string): void { //eslint-disable-line 
         return;
     }
 

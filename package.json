@@ -8,7 +8,7 @@
     "build": "tsc && tsc-alias",
     "buildQuick": "tsc && tsc-alias",
     "prestart": "npm run build",
-    "start": "node dist/master | pino-pretty -c -t",
+    "start": "node dist/master --generic ${npm_config_generic} | pino-pretty -c -t",
     "prestartQuick": "npm run buildQuick",
     "startQuick": "node dist/master --generic ${npm_config_generic} | pino-pretty -c -t",
     "reqLog": "cat logs/requests/current.json | grep \"${npm_config_reqid}\" | jq -s 'sort_by(.time) | .[]' -c | pino-pretty -c -t 'SYS:standard'",
@@ -32,7 +32,6 @@
     "body-parser": "^1.20.0",
     "dot-object": "^2.1.4",
     "express": "^4.18.1",
-    "express-remove-route": "^1.0.0",
     "helmet": "^5.1.0",
     "mongodb": "^4.7.0",
     "mysql2": "^2.3.3",
@@ -47,6 +46,7 @@
     "zod": "^3.17.3"
   },
   "devDependencies": {
+    "@anatine/zod-openapi": "^1.7.0",
     "@typescript-eslint/eslint-plugin": "^5.30.5",
     "@typescript-eslint/parser": "^5.30.5",
     "eslint": "^8.19.0",

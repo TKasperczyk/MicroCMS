@@ -4,6 +4,6 @@ import { TRouteMapping } from "@framework/types/communication/socket/RouteMappin
 
 export const TDiscoveryPack = z.object({
     routeMappings: z.array(TRouteMapping),
-    serviceId: z.string()
+    serviceId: z.string().trim()
 }).strict();
 export type TDiscoveryPack = z.input<typeof TDiscoveryPack>;

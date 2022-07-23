@@ -5,7 +5,7 @@ import { isObject } from "@framework/helpers/assertions";
 import { extractUserData } from "@framework/helpers/communication";
 import { extractPacketData } from "@framework/helpers/communication/socket/packetData";
 import { reqLogger } from "@framework/logger";
-import { TData_User } from "@services/database/generic/data/user/type";
+import { TGeneric_Data_User } from "@services/database/generic/data/user/type";
 
 import { TApiResult, TAuthorizeMap, TAuthorizeMapOutput } from "@framework/types/communication";
 import { TSocketNextFunction , TCmsMessage } from "@framework/types/communication/socket";
@@ -32,11 +32,11 @@ export class Authorizer<InputType> {
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
     protected customInputLogic(input: InputType): boolean { return true; }
-    protected customOutputLogic(response: TApiResult<InputType>, user: TData_User): TApiResult<InputType> | null { return response; }
+    protected customOutputLogic(response: TApiResult<InputType>, user: TGeneric_Data_User): TApiResult<InputType> | null { return response; }
     protected customOperationLogic(operation: string): boolean { return true; }
     /* eslint-enable @typescript-eslint/no-unused-vars */
 
-    public authorizeOutput(response: TApiResult<InputType>, user: TData_User, requestId: string): TApiResult<InputType> {
+    public authorizeOutput(response: TApiResult<InputType>, user: TGeneric_Data_User, requestId: string): TApiResult<InputType> {
         rl.trace({ user: extractUserData(user), requestId }, "Authorizing a response");
         if (!user?.login || !user?.group) {
             throw new Error("Malformed or missing user object");

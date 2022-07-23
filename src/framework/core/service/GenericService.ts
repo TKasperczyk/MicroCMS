@@ -29,6 +29,7 @@ export class GenericService<TGenericService> {
         this.servicePath = servicePath;
 
         this.running = false;
+        this.shouldStop = false;
         this.ml = appLogger(serviceId);
         this.rl = reqLogger(serviceId);
         this.serviceRouteMappings = this.getServiceRouteMappings(this.servicePath);
@@ -57,6 +58,7 @@ export class GenericService<TGenericService> {
     private httpServer: HttpServer;
 
     private running: boolean;
+    private shouldStop: boolean;
 
     public async run(): Promise<boolean> {
         this.running = false;
@@ -72,7 +74,10 @@ export class GenericService<TGenericService> {
 
         try {
             this.ml.debug("Announcing the service and waiting for a response...");
-            const serviceSetup = await reannounce(this.serviceAnnouncer);
+            const serviceSetup = await reannounce(this.serviceAnnouncer, () => this.shouldStop);
+            if (!serviceSetup) {
+                throw new Error("Couldn't announce the service!");
+            }
             httpServer.listen(serviceSetup.port, "127.0.0.1");
             this.ml.info(`Service ${this.serviceId} listening on port ${serviceSetup.port}`);
         } catch (error) {
@@ -86,11 +91,14 @@ export class GenericService<TGenericService> {
         if (!this.running) {
             return;
         }
+        this.shouldStop = true;
         try {
             this.httpServer.close();
         } catch (error) {
             this.ml.error(`Error while shutting down the service: ${getErrorMessage(error)}`);
         }
+        this.running = false;
+        this.shouldStop = false;
     }
     public getServiceRouteMappings(routePrefix: string): TRouteMapping[] {
         return getCoreRouteMappings(routePrefix).concat(getCrudRouteMappings(routePrefix));
@@ -137,7 +145,8 @@ export class GenericService<TGenericService> {
                 ],
                 serviceApiCall, this.serviceAnnouncer, this.serviceRouteMappings, 
                 callbackFactories,
-                httpServer
+                httpServer,
+                () => this.shouldStop,
             );
         });
     }

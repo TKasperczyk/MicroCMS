@@ -71,7 +71,6 @@ discovery.on("register", (serviceId: string) => {
         return;
     }
     ml.info(`Created new express routes for service: ${serviceId}`);
-
 });
 
 discovery.on("unregister", (serviceId: string) => {

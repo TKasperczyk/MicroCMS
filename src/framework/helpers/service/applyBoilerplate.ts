@@ -22,6 +22,7 @@ export const applyBoilerplate = <TServiceType>(
     serviceRouteMappings: TRouteMapping[],
     callbackFactories: TCallbackFactories<TServiceType>,
     httpServer: Server,
+    shouldStopAnnounce: () => boolean = () => false,
 ): void => {
     // Add common middleware
     socket.use(shutdown);
@@ -87,7 +88,10 @@ export const applyBoilerplate = <TServiceType>(
         try {
             httpServer.close();
             socket.offAny().removeAllListeners().disconnect();
-            const serviceSetup = await reannounce(serviceAnnounce.bind(null, serviceRouteMappings));
+            const serviceSetup = await reannounce(serviceAnnounce.bind(null, serviceRouteMappings), shouldStopAnnounce);
+            if (!serviceSetup) {
+                throw new Error("Couldn't announce the service!");
+            }
             httpServer.close();
             httpServer.listen(serviceSetup.port, "127.0.0.1");
         } catch (error) {

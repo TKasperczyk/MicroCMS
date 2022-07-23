@@ -1,8 +1,8 @@
-import { TData_User } from "@services/database/generic/data/user/type";
+import { TGeneric_Data_User } from "@services/database/generic/data/user/type";
 
-type TData_UserPartial = Pick<TData_User, "login" | "group">;
+type TGeneric_Data_UserPartial = Pick<TGeneric_Data_User, "login" | "group">;
 
-export const extractUserData = (incomingObject: TData_UserPartial | { user: TData_UserPartial }): TData_UserPartial => {
+export const extractUserData = (incomingObject: TGeneric_Data_UserPartial | { user: TGeneric_Data_UserPartial }): TGeneric_Data_UserPartial => {
     let login = "", group = "";
     if ("user" in incomingObject) {
         login = incomingObject.user?.login || "";
